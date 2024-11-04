@@ -1,5 +1,7 @@
 import FirecrawlApp from '@mendable/firecrawl-js';
 
+import { AppError } from '../../errors';
+
 type AllowedDomain = {
   name: string;
   url: string;
@@ -24,20 +26,12 @@ export class WebScrapeSkill {
       throw new Error(`URL not in the list of allowed domains. ${JSON.stringify({ url })}`);
     }
 
-    try {
-      const scrapeResult = await this.firecrawlApp.scrapeUrl(url, { formats: ['markdown'] });
+    const scrapeResult = await this.firecrawlApp.scrapeUrl(url, { formats: ['markdown'] });
 
-      if (scrapeResult.success) {
-        return scrapeResult.markdown || '';
-      } else {
-        throw new Error(`Failed to scrape URL ${JSON.stringify({ url, error: scrapeResult.error })}`);
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Failed to scrape URL ${JSON.stringify({ url, error: error.message })}`);
-      } else {
-        throw new Error(`Failed to scrape URL ${JSON.stringify({ url, error: String(error) })}`);
-      }
+    if (scrapeResult.success) {
+      return scrapeResult.markdown || '';
+    } else {
+      throw new AppError('Failed to scrape URL', { url, error: scrapeResult.error });
     }
   }
 }
