@@ -31,6 +31,7 @@
     "typescript-eslint": "^8.13.0"
   },
   "dependencies": {
-    "@mendable/firecrawl-js": "^1.7.2"
+    "@mendable/firecrawl-js": "^1.7.2",
+    "openai": "^4.70.3"
   }
 }
