@@ -31,7 +31,11 @@ async function verify() {
   const answer = completion.choices[0].message.content;
   console.log({ answer });
 
-  // TODO: Send answer to https://xyz.ag3nts.org/verify
+  const verificationResponse = await sendRequestSkill.postRequest('https://xyz.ag3nts.org/verify', {
+    text: answer,
+    msgID,
+  });
+  console.log({ response: verificationResponse });
 }
 
 verify();
