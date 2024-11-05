@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
-    "anti-captcha": "bun run src/anti-captcha/index.ts"
+    "anti-captcha": "bun run src/anti-captcha/index.ts",
+    "verification": "bun run src/verification/index.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
