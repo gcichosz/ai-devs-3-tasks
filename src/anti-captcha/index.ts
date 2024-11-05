@@ -26,13 +26,10 @@ async function main() {
     const question = lines.filter((line) => line.trim().endsWith('?'))?.[0];
     console.log('Extracted questions:', question);
 
-    const completion = await openAi.completionFull(
-      [
-        { role: 'system', content: yearSearchPrompt },
-        { role: 'user', content: webPageContent.markdown },
-      ],
-      'gpt-4o-mini',
-    );
+    const completion = await openAi.completionFull([
+      { role: 'system', content: yearSearchPrompt },
+      { role: 'user', content: webPageContent.markdown },
+    ]);
     const year = completion.choices[0].message.content || '';
     console.log('OpenAI completion:', year);
 

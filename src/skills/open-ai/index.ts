@@ -35,7 +35,7 @@ export class OpenAISkill {
   }
   async completionFull(
     messages: ChatCompletionMessageParam[],
-    model: string = 'gpt-4',
+    model: string = 'gpt-4o-mini',
     jsonMode: boolean = false,
   ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
     return (await this.completion(messages, model, false, jsonMode)) as OpenAI.Chat.Completions.ChatCompletion;
