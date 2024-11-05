@@ -10,7 +10,7 @@ export class OpenAISkill {
     this.openai = new OpenAI({ apiKey: openAiApiKey });
   }
 
-  async completion(
+  private async completion(
     messages: ChatCompletionMessageParam[],
     model: string = 'gpt-4',
     stream: boolean = false,
@@ -32,5 +32,12 @@ export class OpenAISkill {
     } catch (error) {
       throw new AppError('Error in OpenAI completion', { error });
     }
+  }
+  async completionFull(
+    messages: ChatCompletionMessageParam[],
+    model: string = 'gpt-4',
+    jsonMode: boolean = false,
+  ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
+    return (await this.completion(messages, model, false, jsonMode)) as OpenAI.Chat.Completions.ChatCompletion;
   }
 }
