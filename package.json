@@ -14,7 +14,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky install",
+    "prepare": "husky",
     "anti-captcha": "bun run src/anti-captcha/index.ts"
   },
   "devDependencies": {
@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@mendable/firecrawl-js": "^1.7.2",
+    "axios": "^1.7.7",
     "openai": "^4.70.3"
   }
 }
