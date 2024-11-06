@@ -2,6 +2,8 @@ import { promises as fs } from 'fs';
 
 import { TokenizerSkill } from '../skills/tokenizer';
 
+const Gpt4oMiniOutputTokens = 16000;
+
 type TestData = {
   question: string;
   answer: number;
@@ -29,7 +31,18 @@ const calculateTokens = async (data: TestData[]): Promise<number> => {
   return await tokenizer.countTokens(jsonString, 'gpt-4o');
 };
 
-// TODO: Split test data in parts based on number of tokens
+const splitTestData = (tokenCount: number, jsonData: CalibrationData): TestData[][] => {
+  const numberOfParts = Math.ceil(tokenCount / Gpt4oMiniOutputTokens);
+  const partSize = Math.ceil(jsonData['test-data'].length / numberOfParts);
+  const parts = [];
+  for (let i = 0; i < numberOfParts; i++) {
+    const start = i * partSize;
+    const end = Math.min((i + 1) * partSize, jsonData['test-data'].length);
+    parts.push(jsonData['test-data'].slice(start, end));
+  }
+  return parts;
+};
+
 // TODO: Send test data parts to LLM to fix it
 // TODO: Combine fixed test data parts
 // TODO: Replace API key placeholder with actual API key
@@ -39,6 +52,9 @@ const main = async () => {
   console.log(jsonData['test-data'].length);
   const tokenCount = await calculateTokens(jsonData['test-data']);
   console.log(`Number of tokens in test-data: ${tokenCount}`);
+  const parts = splitTestData(tokenCount, jsonData);
+  console.log(parts.length);
 };
 
 main();
+
