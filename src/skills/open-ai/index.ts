@@ -12,7 +12,7 @@ export class OpenAISkill {
 
   private async completion(
     messages: ChatCompletionMessageParam[],
-    model: string = 'gpt-4',
+    model: string = 'gpt-4o-mini',
     stream: boolean = false,
     jsonMode: boolean = false,
   ): Promise<OpenAI.Chat.Completions.ChatCompletion | AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
@@ -33,6 +33,7 @@ export class OpenAISkill {
       throw new AppError('Error in OpenAI completion', { error });
     }
   }
+
   async completionFull(
     messages: ChatCompletionMessageParam[],
     model: string = 'gpt-4o-mini',
