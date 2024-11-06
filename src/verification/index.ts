@@ -1,6 +1,6 @@
-import { MemorySkill } from '../skills/memory';
-import { OpenAISkill } from '../skills/open-ai';
-import { SendRequestSkill } from '../skills/send-request';
+import { MemorySkill } from '../skills/memory/memory-skill';
+import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
+import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { answerQuestionWithContextPrompt } from './prompts';
 
 async function verify() {

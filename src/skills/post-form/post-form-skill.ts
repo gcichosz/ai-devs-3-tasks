@@ -25,11 +25,11 @@ export class PostFormSkill {
       if (axios.isAxiosError(error)) {
         throw new AppError('Form submission failed', {
           status: error.response?.status,
-          error: error.message
+          error: error.message,
         });
       }
       throw new AppError('Failed to submit form', {
-        error: (error as Error).message
+        error: (error as Error).message,
       });
     }
   }

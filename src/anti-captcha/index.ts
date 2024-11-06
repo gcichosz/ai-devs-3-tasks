@@ -1,8 +1,8 @@
 import { promises as fs } from 'fs';
 
-import { OpenAISkill } from '../skills/open-ai';
-import { PostFormSkill } from '../skills/post-form';
-import { WebScrapeSkill } from '../skills/web-scrape';
+import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
+import { PostFormSkill } from '../skills/post-form/post-form-skill';
+import { ScrapeWebSkill } from '../skills/scrape-web/scrape-web-skill';
 import { yearSearchPrompt } from './prompts';
 
 const ALLOWED_DOMAINS = [
@@ -13,7 +13,7 @@ const ALLOWED_DOMAINS = [
 ];
 
 async function main() {
-  const webScraper = new WebScrapeSkill(process.env.FIRECRAWL_API_KEY || '', ALLOWED_DOMAINS);
+  const webScraper = new ScrapeWebSkill(process.env.FIRECRAWL_API_KEY || '', ALLOWED_DOMAINS);
   const openAi = new OpenAISkill(process.env.OPENAI_API_KEY || '');
   const postFormSkill = new PostFormSkill();
 

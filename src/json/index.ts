@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 
-import { OpenAISkill } from '../skills/open-ai';
-import { SendRequestSkill } from '../skills/send-request';
+import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
+import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 // import { TokenizerSkill } from '../skills/tokenizer';
 import { fixTestDataPrompt } from './prompts';
 
@@ -70,11 +70,19 @@ const fixTestData = async (testData: TestData[]): Promise<TestData[]> => {
 };
 
 const reportTestData = async (calibrationData: CalibrationData, fixedTestData: TestData[]) => {
-  const sendRequestSkill = new SendRequestSkill()
-  const fixedCalibrationData: CalibrationData = { ...calibrationData, apikey: process.env.AI_DEVS_API_KEY!, "test-data": fixedTestData };
-  const response = await sendRequestSkill.postRequest("https://centrala.ag3nts.org/report", { task: "JSON", apikey: process.env.AI_DEVS_API_KEY, answer: fixedCalibrationData });
-  return response
-}
+  const sendRequestSkill = new SendRequestSkill();
+  const fixedCalibrationData: CalibrationData = {
+    ...calibrationData,
+    apikey: process.env.AI_DEVS_API_KEY!,
+    'test-data': fixedTestData,
+  };
+  const response = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'JSON',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer: fixedCalibrationData,
+  });
+  return response;
+};
 
 const main = async () => {
   const jsonData = await loadJson('./src/json/json.txt');

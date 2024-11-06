@@ -7,7 +7,7 @@ type AllowedDomain = {
   url: string;
 };
 
-export class WebScrapeSkill {
+export class ScrapeWebSkill {
   private readonly firecrawlApp: FirecrawlApp;
 
   constructor(
@@ -21,7 +21,10 @@ export class WebScrapeSkill {
     return this.allowedDomains.some((domain) => url.startsWith(domain.url));
   }
 
-  async scrapeUrl(url: string, formats: ('markdown' | 'html')[] = ['markdown']): Promise<{ markdown: string, html: string }> {
+  async scrapeUrl(
+    url: string,
+    formats: ('markdown' | 'html')[] = ['markdown'],
+  ): Promise<{ markdown: string; html: string }> {
     if (!this.isUrlAllowed(url)) {
       throw new Error(`URL not in the list of allowed domains. ${JSON.stringify({ url })}`);
     }
