@@ -16,4 +16,14 @@ export class SendRequestSkill {
       throw new AppError('Failed to send POST request', { error });
     }
   }
+
+  async getRequest(url: string): Promise<Record<string, unknown>> {
+    try {
+      const response = await axios.get(url);
+      return response.data;
+    } catch (error) {
+      console.log(error);
+      throw new AppError('Failed to send GET request', { error });
+    }
+  }
 }
