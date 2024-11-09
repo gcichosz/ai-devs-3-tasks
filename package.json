@@ -17,7 +17,8 @@
     "prepare": "husky",
     "anti-captcha": "bun run src/anti-captcha/index.ts",
     "verification": "bun run src/verification/index.ts",
-    "json": "bun run src/json/index.ts"
+    "json": "bun run src/json/index.ts",
+    "censorship": "bun run src/censorship/index.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
