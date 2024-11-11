@@ -1,14 +1,16 @@
 import { promises as fs } from 'fs';
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
+import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { SpeechToTextSkill } from '../skills/speech-to-text/SpeechToTextSkill';
-import { answerQuestionPrompt, irrelevantInformationFilterPrompt } from './prompts';
+import { answerQuestionPrompt, extractStreetNamePrompt, irrelevantInformationFilterPrompt } from './prompts';
 
 // TODO: Implement sending response to headquarters (endpoint /report) with task name 'mp3'
 
 const main = async () => {
   const speechToTextSkill = new SpeechToTextSkill(process.env.GROQ_API_KEY);
   const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
+  const sendRequestSkill = new SendRequestSkill();
 
   const cacheFile = await fs.readFile('./src/interrogation/cache.json', 'utf-8');
   const cache = JSON.parse(cacheFile);
@@ -47,7 +49,7 @@ const main = async () => {
   const relevantTranscriptions = transcriptions.filter((_, index) => isRelevantDecisions[index]);
   console.log(relevantTranscriptions);
 
-  const answerQuestionResponse = await openAiSkill.completionFull(
+  const interrogationQuestionResponse = await openAiSkill.completionFull(
     [
       {
         role: 'system',
@@ -58,7 +60,22 @@ const main = async () => {
     ],
     'gpt-4o',
   );
-  console.log(answerQuestionResponse.choices[0].message.content);
+  const interrogationAnswer = interrogationQuestionResponse.choices[0].message.content || '';
+  console.log(interrogationAnswer);
+
+  const finalAnswerResponse = await openAiSkill.completionFull([
+    { role: 'system', content: extractStreetNamePrompt },
+    { role: 'user', content: interrogationAnswer },
+  ]);
+  const finalAnswer = finalAnswerResponse.choices[0].message.content;
+  console.log(finalAnswer);
+
+  const finalResponse = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'mp3',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer: 'Łojasiewicza',
+  });
+  console.log(finalResponse);
 };
 
 main();

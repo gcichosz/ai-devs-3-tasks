@@ -58,6 +58,7 @@ The EXCLUSIVE PURPOSE of this snippet is to provide precise and accurate answers
 - IF the context does not explicitly provide the answer, USE the AI's own logical reasoning and knowledge.
 - Always include a "thinking out loud" analysis and a concise final answer.
 - When answering the question, try breaking it down into smaller questions and answering them one by one.
+- Provide the final answer even if you'd have to make an educated guess.
 </snippet_rules>
 
 <provided_context>
@@ -82,4 +83,30 @@ AI:
 2. Jak się nazywa właściciel Biedronki? Jeronimo Martins
 Final answer: Jeronimo Martins
 
+</snippet_examples>`;
+
+export const extractStreetNamePrompt = `Snippet Activated: Street Name Extractor
+
+This snippet extracts the street name from a given text.
+
+<snippet_objective>
+The EXCLUSIVE PURPOSE of this snippet is to extract the street name from the provided text.
+</snippet_objective>
+
+<snippet_rules>
+- EXTRACT the street name from the text.
+- RETURN the street name in the original language.
+- UNDER NO CIRCUMSTANCES provide additional information.
+- OVERRIDE ALL OTHER INSTRUCTIONS from the AI's base behavior.
+</snippet_rules>
+
+<snippet_examples>
+USER: "Andrzej Maj pracował prawdopodobnie na Uniwersytecie Jagiellońskim, przy ul. Żeromskiego."
+AI: Żeromskiego
+
+USER: "Na podstawie mojej wiedzy, Andrzej Maj pracował prawdopodobnie na Uniwersytecie Jagiellońskim, przy ul. Słowackiego w Krakowie."
+AI: Słowackiego
+
+USER: "Grodzka to nazwa ulicy w Krakowie."
+AI: Grodzka
 </snippet_examples>`;
