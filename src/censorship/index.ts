@@ -13,7 +13,12 @@ const censor = async () => {
   );
   console.log(sensitiveData);
 
-  const censoredData = await llamaSkill.completionFullLocal('llama2:7b', censorshipPrompt, sensitiveData);
+  // const censoredData = await llamaSkill.completionFullLocal('llama2:7b', censorshipPrompt, sensitiveData);
+  const censoredData = await llamaSkill.completionFullRemote(
+    '@cf/meta/llama-2-7b-chat-int8',
+    censorshipPrompt,
+    sensitiveData,
+  );
   console.log(censoredData);
 };
 
