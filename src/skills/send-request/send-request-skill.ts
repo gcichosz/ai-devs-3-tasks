@@ -17,7 +17,7 @@ export class SendRequestSkill {
     }
   }
 
-  async getRequest(url: string): Promise<Record<string, unknown>> {
+  async getRequest(url: string): Promise<string> {
     try {
       const response = await axios.get(url);
       return response.data;

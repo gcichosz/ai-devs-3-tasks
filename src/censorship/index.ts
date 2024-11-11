@@ -2,8 +2,6 @@ import { LlamaSkill } from '../skills/llama/llama-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { censorshipPrompt } from './prompts';
 
-// TODO: Implement sending censored data to centrala.ag3nts.org/report
-
 const censor = async () => {
   const sendRequestSkill = new SendRequestSkill();
   const llamaSkill = new LlamaSkill();
@@ -20,6 +18,13 @@ const censor = async () => {
     sensitiveData,
   );
   console.log(censoredData);
+
+  const reportResponse = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'CENZURA',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer: censoredData,
+  });
+  console.log(reportResponse);
 };
 
 censor();
