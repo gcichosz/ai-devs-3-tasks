@@ -4,8 +4,6 @@ import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SpeechToTextSkill } from '../skills/speech-to-text/SpeechToTextSkill';
 import { answerQuestionPrompt, irrelevantInformationFilterPrompt } from './prompts';
 
-// TODO: Add logic to check testimony consistency, with special attention to Rafal's testimony
-// TODO: Implement chain-of-thought prompting for better model reasoning
 // TODO: Implement sending response to headquarters (endpoint /report) with task name 'mp3'
 
 const main = async () => {
