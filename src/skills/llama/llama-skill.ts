@@ -1,9 +1,12 @@
 import axios from 'axios';
 
 export class LlamaSkill {
-  async completionFull(model: string, prompt: string): Promise<string> {
+  async completionFullLocal(model: string, system: string, prompt: string): Promise<string> {
+    console.log(system);
+    console.log(prompt);
     const response = await axios.post('http://localhost:11434/api/generate', {
       model,
+      system,
       prompt,
       stream: false,
     });

@@ -1,12 +1,7 @@
 import { LlamaSkill } from '../skills/llama/llama-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
+import { censorshipPrompt } from './prompts';
 
-// TODO: Send censorship request to Llama skill (replace sensitive data with "CENZURA"):
-//       - first name and last name
-//       - age
-//       - city
-//       - street name and number
-// TODO: Ensure preservation of all punctuation and spacing
 // TODO: Implement sending censored data to centrala.ag3nts.org/report
 
 const censor = async () => {
@@ -18,7 +13,7 @@ const censor = async () => {
   );
   console.log(sensitiveData);
 
-  const censoredData = await llamaSkill.completionFull('llama2:7b', 'Hello, respond with hello world!');
+  const censoredData = await llamaSkill.completionFullLocal('llama2:7b', censorshipPrompt, sensitiveData);
   console.log(censoredData);
 };
 
