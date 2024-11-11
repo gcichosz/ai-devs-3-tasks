@@ -2,10 +2,9 @@ import { promises as fs } from 'fs';
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SpeechToTextSkill } from '../skills/speech-to-text/SpeechToTextSkill';
-import { irrelevantInformationFilterPrompt } from './prompts';
+import { answerQuestionPrompt, irrelevantInformationFilterPrompt } from './prompts';
 
 // TODO: Create a function that combines all transcriptions into a shared context
-// TODO: Implement context analysis using LLM to find the name of the street where Prof. Maj's university is located
 // TODO: Add logic to check testimony consistency, with special attention to Rafal's testimony
 // TODO: Implement chain-of-thought prompting for better model reasoning
 // TODO: Implement sending response to headquarters (endpoint /report) with task name 'mp3'
@@ -34,6 +33,12 @@ const main = async () => {
     { role: 'user', content: transcription },
   ]);
   console.log(irrelevantInformationResponse.choices[0].message.content);
+
+  const answerQuestionResponse = await openAiSkill.completionFull([
+    { role: 'system', content: answerQuestionPrompt(`- ${transcription}`) },
+    { role: 'user', content: "What is the name of the street where Prof. Maj's university is located?" },
+  ]);
+  console.log(answerQuestionResponse.choices[0].message.content);
 };
 
 main();
