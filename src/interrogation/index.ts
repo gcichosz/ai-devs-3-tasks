@@ -15,8 +15,18 @@ const main = async () => {
   const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
 
   // TODO: Use all the files
-  const speech = await fs.readFile('./src/interrogation/interrogation-files/adam.m4a');
-  const transcription = await speechToTextSkill.transcribe(speech);
+  const cacheFile = await fs.readFile('./src/interrogation/cache.json', 'utf-8');
+  const cache = JSON.parse(cacheFile);
+
+  let transcription = '';
+  if (!cache.adam) {
+    const speech = await fs.readFile('./src/interrogation/interrogation-files/adam.m4a');
+    transcription = await speechToTextSkill.transcribe(speech);
+    cache.adam = transcription;
+    await fs.writeFile('./src/interrogation/cache.json', JSON.stringify(cache, null, 2));
+  } else {
+    transcription = cache.adam;
+  }
   console.log(transcription);
 
   const irrelevantInformationResponse = await openAiSkill.completionFull([
