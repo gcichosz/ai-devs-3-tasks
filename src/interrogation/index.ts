@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
-import { SpeechToTextSkill } from '../skills/speech-to-text/SpeechToTextSkill';
+import { SpeechToTextSkill } from '../skills/speech-to-text/speech-to-text-skill';
 import { answerQuestionPrompt, extractStreetNamePrompt, irrelevantInformationFilterPrompt } from './prompts';
 
 // TODO: Implement sending response to headquarters (endpoint /report) with task name 'mp3'
