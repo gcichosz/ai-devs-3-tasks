@@ -41,6 +41,7 @@
     "@microsoft/tiktokenizer": "^1.0.9",
     "axios": "^1.7.7",
     "groq-sdk": "^0.7.0",
+    "langfuse": "^3.29.1",
     "openai": "^4.70.3",
     "sharp": "^0.33.5"
   }
