@@ -1,4 +1,3 @@
-// TODO: Prepare four images of map fragments from the provided folder or physical documents
 // TODO: Create Vision skill
 // TODO: Use vision skill to analyze map fragments
 // TODO: Setup LangChain to manage prompts
