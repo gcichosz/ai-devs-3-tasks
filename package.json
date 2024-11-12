@@ -8,6 +8,7 @@
     "url": "https://github.com/gcichosz/ai-devs-3-tasks"
   },
   "license": "ISC",
+  "type": "module",
   "scripts": {
     "build": "tsc --noEmit",
     "lint": "eslint .",
