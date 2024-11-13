@@ -21,7 +21,8 @@
     "json": "bun run src/json/index.ts",
     "censorship": "bun run src/censorship/index.ts",
     "interrogation": "bun run src/interrogation/index.ts",
-    "map": "bun run src/map/index.ts"
+    "map": "bun run src/map/index.ts",
+    "visualization": "bun run src/visualization/index.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
