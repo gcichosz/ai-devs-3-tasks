@@ -19,7 +19,7 @@ async function main() {
   const [mapRecognitionSystemMessage] = mapRecognitionPrompt.compile();
   console.log(mapRecognitionSystemMessage);
 
-  const recognizeResponse = await openAiSkill.completionFull(
+  const mapInformationResponse = await openAiSkill.completionFull(
     [
       mapRecognitionSystemMessage as never,
       {
@@ -37,7 +37,19 @@ async function main() {
     ],
     'gpt-4o',
   );
-  console.log(recognizeResponse.choices[0].message.content);
+  const mapInformation = mapInformationResponse.choices[0].message.content ?? '';
+  console.log(mapInformation);
+
+  const cityRecognitionPrompt = await langfuseService.getPrompt('city-recognition');
+  const [cityRecognitionSystemMessage] = cityRecognitionPrompt.compile();
+  console.log(cityRecognitionSystemMessage);
+
+  const cityRecognitionResponse = await openAiSkill.completionFull(
+    [cityRecognitionSystemMessage as never, { role: 'user', content: `Information 1:\n${mapInformation}` }],
+    'gpt-4o',
+  );
+  const cityRecognition = cityRecognitionResponse.choices[0].message.content ?? '';
+  console.log(cityRecognition);
 }
 
 main();
