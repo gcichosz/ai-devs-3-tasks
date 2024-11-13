@@ -15,7 +15,7 @@ const censor = async () => {
   const censoredData = await llamaSkill.completionFullRemote(
     '@cf/meta/llama-2-7b-chat-int8',
     censorshipPrompt,
-    sensitiveData,
+    sensitiveData as string,
   );
   console.log(censoredData);
 
