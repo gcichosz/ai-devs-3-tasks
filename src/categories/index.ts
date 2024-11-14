@@ -7,7 +7,6 @@ import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SpeechToTextSkill } from '../skills/speech-to-text/speech-to-text-skill';
 import { LangfuseService } from '../utils/lang-fuse/langfuse-service';
 
-// TODO: Create function for text analysis and content classification (people/machines)
 // TODO: Implement function for alphabetical sorting of filenames
 // TODO: Create function for generating report in JSON format
 
@@ -22,6 +21,7 @@ interface ReportFile {
   type: FileType;
   content: string | Buffer;
   transcription?: string;
+  topic?: string;
 }
 
 const readFiles = async (): Promise<ReportFile[]> => {
@@ -84,12 +84,31 @@ const transcribeFiles = async (files: ReportFile[]): Promise<ReportFile[]> => {
   return await Promise.all(transcriptionPromise);
 };
 
+const findFileTopics = async (files: ReportFile[]): Promise<ReportFile[]> => {
+  const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
+  const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY, process.env.LANGFUSE_SECRET_KEY);
+  const peopleHardwareOtherPrompt = await langfuseService.getPrompt('people-hardware-other');
+  const [peopleHardwareOtherSystemMessage] = peopleHardwareOtherPrompt.compile();
+
+  const topicPromise = files.map(async (file) => {
+    const topicResponse = await openAiSkill.completionFull([
+      peopleHardwareOtherSystemMessage as never,
+      { role: 'user', content: file.transcription as string },
+    ]);
+    return { ...file, topic: topicResponse.choices[0].message.content ?? '' };
+  });
+  return await Promise.all(topicPromise);
+};
+
 const main = async () => {
   const files = await readFiles();
   console.log(files.map((file) => file.name));
 
   const transcribedFiles = await transcribeFiles(files);
   console.log(transcribedFiles.map((file) => file.transcription));
+
+  const fileTopics = await findFileTopics(transcribedFiles);
+  console.log(fileTopics.map((file) => file.topic));
 };
 
 main();
