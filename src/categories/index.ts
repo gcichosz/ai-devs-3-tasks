@@ -7,9 +7,6 @@ import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SpeechToTextSkill } from '../skills/speech-to-text/speech-to-text-skill';
 import { LangfuseService } from '../utils/lang-fuse/langfuse-service';
 
-// TODO: Implement function for alphabetical sorting of filenames
-// TODO: Create function for generating report in JSON format
-
 enum FileType {
   TXT = 'txt',
   MP3 = 'mp3',
@@ -109,6 +106,18 @@ const main = async () => {
 
   const fileTopics = await findFileTopics(transcribedFiles);
   console.log(fileTopics.map((file) => file.topic));
+
+  const report = {
+    people: fileTopics
+      .filter((file) => file.topic === 'people')
+      .map((file) => file.name)
+      .sort(),
+    hardware: fileTopics
+      .filter((file) => file.topic === 'hardware')
+      .map((file) => file.name)
+      .sort(),
+  };
+  console.log(report);
 };
 
 main();
