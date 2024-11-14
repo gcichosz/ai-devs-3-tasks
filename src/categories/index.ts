@@ -4,6 +4,7 @@ import path from 'path';
 
 import { ImageManipulationSkill } from '../skills/image-manipulation/image-manipulation-skill';
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
+import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { SpeechToTextSkill } from '../skills/speech-to-text/speech-to-text-skill';
 import { LangfuseService } from '../utils/lang-fuse/langfuse-service';
 
@@ -118,6 +119,14 @@ const main = async () => {
       .sort(),
   };
   console.log(report);
+
+  const sendRequestSkill = new SendRequestSkill();
+  const reportResponse = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'kategorie',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer: report,
+  });
+  console.log(reportResponse);
 };
 
 main();
