@@ -8,11 +8,11 @@ export class SpeechToTextSkill {
     this.groq = new Groq({ apiKey: groqApiKey });
   }
 
-  async transcribe(speech: Buffer): Promise<string> {
+  async transcribe(speech: Buffer, language: string = 'pl'): Promise<string> {
     const transcription = await this.groq.audio.transcriptions.create({
       file: await toFile(speech, 'speech.mp3'),
       model: 'whisper-large-v3',
-      language: 'pl',
+      language,
     });
 
     return transcription.text;
