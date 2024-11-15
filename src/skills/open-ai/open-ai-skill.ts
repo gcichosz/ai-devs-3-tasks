@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+import type { ChatCompletionMessageParam, CreateEmbeddingResponse } from 'openai/resources/index.mjs';
 
 import { AppError } from '../../errors';
 
@@ -40,5 +40,18 @@ export class OpenAISkill {
     jsonMode: boolean = false,
   ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
     return (await this.completion(messages, model, false, jsonMode)) as OpenAI.Chat.Completions.ChatCompletion;
+  }
+
+  async createEmbedding(text: string): Promise<number[]> {
+    try {
+      const response: CreateEmbeddingResponse = await this.openai.embeddings.create({
+        model: 'text-embedding-3-large',
+        input: text,
+      });
+      return response.data[0].embedding;
+    } catch (error) {
+      console.error('Error creating embedding:', error);
+      throw error;
+    }
   }
 }

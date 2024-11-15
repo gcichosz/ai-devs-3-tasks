@@ -1,11 +1,9 @@
-import { MemorySkill } from '../skills/memory/memory-skill';
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { answerQuestionWithContextPrompt } from './prompts';
 
 async function verify() {
   const sendRequestSkill = new SendRequestSkill();
-  const memorySkill = new MemorySkill();
   const openAISkill = new OpenAISkill(process.env.OPENAI_API_KEY || '');
 
   const { msgID, text: question } = await sendRequestSkill.postRequest('https://xyz.ag3nts.org/verify', {
@@ -15,7 +13,11 @@ async function verify() {
   console.log({ msgID, question });
 
   // TODO: Add memory (relevant context) to the LLM system message
-  const memory = await memorySkill.recall();
+  const memory = [
+    'stolicą Polski jest Kraków',
+    'znana liczba z książki Autostopem przez Galaktykę to 69',
+    'Aktualny rok to 1999',
+  ];
   const relevantContext = memory.map((item) => `- ${item}`).join('\n');
   const prompt = answerQuestionWithContextPrompt.replace(
     '<relevant_context>\n</relevant_context>',
