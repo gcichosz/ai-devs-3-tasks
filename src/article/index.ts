@@ -1,8 +1,8 @@
 import { promises as fs } from 'fs';
 
+import { MemorySkill } from '../skills/memory/memory-skill';
 import { ScrapeWebSkill } from '../skills/scrape-web/scrape-web-skill';
 
-// TODO: Index text from the article
 // TODO: Index images from the article
 // TODO: Add context to the images
 // TODO: Index audio from the article
@@ -31,9 +31,22 @@ const getArticle = async () => {
   return response.markdown;
 };
 
+const memorize = async (notes: string[]) => {
+  const memorySkill = new MemorySkill('./src/article', process.env.OPENAI_API_KEY);
+  await memorySkill.forgetAll();
+
+  const learnPromises = notes.map((note) => memorySkill.learn(note));
+  await Promise.all(learnPromises);
+};
+
 const main = async () => {
   const article = await getArticle();
-  console.log(article);
+  // console.log(article);
+
+  const paragraphs = article.split(/(?=##\s)/);
+  // console.log(paragraphs);
+
+  await memorize(paragraphs);
 };
 
 main();
