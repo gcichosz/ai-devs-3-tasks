@@ -43,9 +43,14 @@
     "@mendable/firecrawl-js": "^1.7.2",
     "@microsoft/tiktokenizer": "^1.0.9",
     "axios": "^1.7.7",
+    "faiss-node": "^0.5.1",
     "groq-sdk": "^0.7.0",
     "langfuse": "^3.29.1",
     "openai": "^4.70.3",
-    "sharp": "^0.33.5"
-  }
+    "sharp": "^0.33.5",
+    "uuid": "^11.0.3"
+  },
+  "trustedDependencies": [
+    "faiss-node"
+  ]
 }
