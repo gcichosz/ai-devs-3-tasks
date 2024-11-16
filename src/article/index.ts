@@ -1,4 +1,6 @@
 import { promises as fs } from 'fs';
+import { LangfuseTraceClient } from 'langfuse';
+import { v4 as uuidv4 } from 'uuid';
 
 import { ImageManipulationSkill } from '../skills/image-manipulation/image-manipulation-skill';
 import { MemorySkill } from '../skills/memory/memory-skill';
@@ -114,17 +116,26 @@ const getQuestionsContext = async (questions: Question[]) => {
   return contexts;
 };
 
-const answerQuestions = async (questions: Question[]) => {
+const answerQuestions = async (questions: Question[], langfuseService: LangfuseService, trace: LangfuseTraceClient) => {
   const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
-  const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY, process.env.LANGFUSE_SECRET_KEY);
   const answerQuestionPrompt = await langfuseService.getPrompt('answer-question-with-context');
 
   const answerPromises = questions.map(async (question) => {
     const [answerQuestionSystemMessage] = answerQuestionPrompt.compile({ context: question.context! });
+    const span = langfuseService.createSpan(trace, 'answer-question-with-context', [
+      answerQuestionSystemMessage as never,
+      { role: 'user', content: question.content },
+    ]);
     const answer = await openAiSkill.completionFull([
       answerQuestionSystemMessage as never,
       { role: 'user', content: question.content },
     ]);
+    langfuseService.finalizeSpan(
+      span,
+      'answer-question-with-context',
+      [answerQuestionSystemMessage as never, { role: 'user', content: question.content }],
+      answer,
+    );
     const fullAnswer = answer.choices[0].message.content;
     const finalAnswer = fullAnswer?.split('Final answer:')[1];
     return { ...question, answer: finalAnswer };
@@ -133,7 +144,13 @@ const answerQuestions = async (questions: Question[]) => {
   return answers;
 };
 
-const main = async () => {
+const main = async (langfuseService: LangfuseService) => {
+  const trace = langfuseService.createTrace({
+    id: uuidv4(),
+    name: 'article',
+    sessionId: uuidv4(),
+  });
+
   const article = await getArticle();
   console.log(article);
 
@@ -155,7 +172,7 @@ const main = async () => {
   const questionsWithContext = await getQuestionsContext(questions);
   console.log(questionsWithContext);
 
-  const answeredQuestions = await answerQuestions(questionsWithContext);
+  const answeredQuestions = await answerQuestions(questionsWithContext, langfuseService, trace);
   console.log(answeredQuestions.map((answer) => ({ question: answer.content, answer: answer.answer })));
 
   const sendRequestSkill = new SendRequestSkill();
@@ -167,6 +184,14 @@ const main = async () => {
       .reduce((acc, curr) => ({ ...acc, ...curr }), {}),
   });
   console.log(reportResponse);
+
+  await langfuseService.finalizeTrace(trace);
 };
 
-main();
+const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY, process.env.LANGFUSE_SECRET_KEY);
+process.on('SIGINT', async () => {
+  await langfuseService.shutdownAsync();
+  process.exit(0);
+});
+
+main(langfuseService);
