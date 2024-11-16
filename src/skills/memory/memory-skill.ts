@@ -22,6 +22,20 @@ export class MemorySkill {
     this.vectorStore.add(embedding, uuid);
   }
 
+  async recallSimilar(embedding: number[]): Promise<string> {
+    const memoryIds = await this.vectorStore.search(embedding);
+    const memoryPromises = memoryIds.map(async (id) => {
+      const memory = await fs.readFile(`${this.memoryDir}/${id}.md`, 'utf-8');
+      return memory;
+    });
+    const memories = await Promise.all(memoryPromises);
+    return memories.join('\n');
+  }
+
+  async recallAll(): Promise<void> {
+    await this.vectorStore.load();
+  }
+
   async forgetAll() {
     await fs.rm(this.memoryDir, { recursive: true, force: true });
     await fs.mkdir(this.memoryDir, { recursive: true });
