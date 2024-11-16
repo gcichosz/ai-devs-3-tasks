@@ -8,8 +8,6 @@ import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { SpeechToTextSkill } from '../skills/speech-to-text/speech-to-text-skill';
 import { LangfuseService } from '../utils/lang-fuse/langfuse-service';
 
-// TODO: Report answers
-
 const ALLOWED_DOMAINS = [
   {
     name: 'centrala',
@@ -137,14 +135,16 @@ const answerQuestions = async (questions: Question[]) => {
 
 const main = async () => {
   const article = await getArticle();
-  // console.log(article);
+  console.log(article);
 
   const pureParagraphs = article.split(/(?=##\s)/);
-  // console.log(paragraphs);
+  console.log(pureParagraphs);
 
   const expandedParagraphsPromises = pureParagraphs.map((paragraph) => expandParagraph(paragraph));
   const expandedParagraphs = await Promise.all(expandedParagraphsPromises);
-  // console.log(expandedParagraphs);
+  console.log(expandedParagraphs);
+
+  await memorize(expandedParagraphs);
 
   const allQuestions = await getQuestions();
   console.log(allQuestions);
@@ -157,6 +157,16 @@ const main = async () => {
 
   const answeredQuestions = await answerQuestions(questionsWithContext);
   console.log(answeredQuestions.map((answer) => ({ question: answer.content, answer: answer.answer })));
+
+  const sendRequestSkill = new SendRequestSkill();
+  const reportResponse = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'arxiv',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer: answeredQuestions
+      .map((answer) => ({ [answer.id]: answer.answer }))
+      .reduce((acc, curr) => ({ ...acc, ...curr }), {}),
+  });
+  console.log(reportResponse);
 };
 
 main();
