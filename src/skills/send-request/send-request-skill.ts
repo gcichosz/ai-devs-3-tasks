@@ -26,4 +26,9 @@ export class SendRequestSkill {
       throw new AppError('Failed to send GET request', { error });
     }
   }
+
+  async downloadFile(url: string): Promise<Buffer> {
+    const response = await axios.get(url, { responseType: 'arraybuffer' });
+    return Buffer.from(response.data);
+  }
 }
