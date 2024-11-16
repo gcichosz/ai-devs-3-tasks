@@ -12,7 +12,7 @@ async function main() {
   const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
   const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY, process.env.LANGFUSE_SECRET_KEY);
 
-  const base64MapImage = await imageManipulationSkill.prepareImage('./src/map/maps/mapa-1.png');
+  const base64MapImage = await imageManipulationSkill.prepareImageFromPath('./src/map/maps/mapa-1.png');
   // console.log(base64MapImage);
 
   const mapRecognitionPrompt = await langfuseService.getPrompt('map-recognition');

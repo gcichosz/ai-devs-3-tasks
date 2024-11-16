@@ -57,7 +57,7 @@ const transcribeFiles = async (files: ReportFile[]): Promise<ReportFile[]> => {
       case FileType.MP3:
         return { ...file, transcription: await speechToTextSkill.transcribe(file.content as Buffer, 'en') };
       case FileType.PNG:
-        base64Image = await imageManipulationSkill.prepareImage('./src/categories/factory-files/' + file.name);
+        base64Image = await imageManipulationSkill.prepareImageFromPath('./src/categories/factory-files/' + file.name);
         imageTranscriptionResponse = await openAiSkill.completionFull(
           [
             transcribeTextSystemMessage as never,
