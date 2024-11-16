@@ -54,4 +54,26 @@ export class OpenAISkill {
       throw error;
     }
   }
+
+  async vision(systemPrompt: string, image: string): Promise<string> {
+    const response = await this.completionFull(
+      [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:image/png;base64,${image}`,
+                detail: 'high',
+              },
+            },
+          ],
+        },
+      ],
+      'gpt-4o',
+    );
+    return response.choices[0].message.content ?? '';
+  }
 }
