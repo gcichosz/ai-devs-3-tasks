@@ -6,8 +6,8 @@ import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { ScrapeWebSkill } from '../skills/scrape-web/scrape-web-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { SpeechToTextSkill } from '../skills/speech-to-text/speech-to-text-skill';
+import { LangfuseService } from '../utils/lang-fuse/langfuse-service';
 
-// TODO: Answer article questions using RAG prompt
 // TODO: Report answers
 
 const ALLOWED_DOMAINS = [
@@ -116,6 +116,25 @@ const getQuestionsContext = async (questions: Question[]) => {
   return contexts;
 };
 
+const answerQuestions = async (questions: Question[]) => {
+  const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
+  const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY, process.env.LANGFUSE_SECRET_KEY);
+  const answerQuestionPrompt = await langfuseService.getPrompt('answer-question-with-context');
+
+  const answerPromises = questions.map(async (question) => {
+    const [answerQuestionSystemMessage] = answerQuestionPrompt.compile({ context: question.context! });
+    const answer = await openAiSkill.completionFull([
+      answerQuestionSystemMessage as never,
+      { role: 'user', content: question.content },
+    ]);
+    const fullAnswer = answer.choices[0].message.content;
+    const finalAnswer = fullAnswer?.split('Final answer:')[1];
+    return { ...question, answer: finalAnswer };
+  });
+  const answers = await Promise.all(answerPromises);
+  return answers;
+};
+
 const main = async () => {
   const article = await getArticle();
   // console.log(article);
@@ -135,6 +154,9 @@ const main = async () => {
 
   const questionsWithContext = await getQuestionsContext(questions);
   console.log(questionsWithContext);
+
+  const answeredQuestions = await answerQuestions(questionsWithContext);
+  console.log(answeredQuestions.map((answer) => ({ question: answer.content, answer: answer.answer })));
 };
 
 main();
