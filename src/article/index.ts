@@ -7,7 +7,6 @@ import { ScrapeWebSkill } from '../skills/scrape-web/scrape-web-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { SpeechToTextSkill } from '../skills/speech-to-text/speech-to-text-skill';
 
-// TODO: Get article questions
 // TODO: Answer article questions using RAG prompt
 // TODO: Report answers
 
@@ -76,6 +75,14 @@ const memorize = async (notes: string[]) => {
   await Promise.all(learnPromises);
 };
 
+const getQuestions = async () => {
+  const sendRequestSkill = new SendRequestSkill();
+  const response = await sendRequestSkill.getRequest(
+    `https://centrala.ag3nts.org/data/${process.env.AI_DEVS_API_KEY}/arxiv.txt`,
+  );
+  return response;
+};
+
 const main = async () => {
   const article = await getArticle();
   // console.log(article);
@@ -87,7 +94,8 @@ const main = async () => {
   const expandedParagraphs = await Promise.all(expandedParagraphsPromises);
   // console.log(expandedParagraphs);
 
-  await memorize(expandedParagraphs);
+  const questions = await getQuestions();
+  console.log(questions);
 };
 
 main();
