@@ -24,6 +24,22 @@ export class VectorStore {
     await this.save();
   }
 
+  async search(vector: number[]): Promise<string[]> {
+    const normalizedVector = this.normalizeVector(vector);
+    const total = this.index.ntotal();
+    if (total === 0) {
+      return [];
+    }
+    const { labels } = this.index.search(normalizedVector, 3);
+    return labels.map((label) => this.metadata.get(label) as string);
+  }
+
+  async load(): Promise<void> {
+    this.index = IndexFlatIP.read(this.indexPath);
+    const metadataContent = await fs.readFile(this.metadataPath, 'utf-8');
+    this.metadata = new Map(JSON.parse(metadataContent));
+  }
+
   async clear(): Promise<void> {
     await fs.rm(this.indexPath, { recursive: true, force: true });
     await fs.rm(this.metadataPath, { recursive: true, force: true });
