@@ -18,6 +18,13 @@ const ALLOWED_DOMAINS = [
 ];
 const ARTICLE_BASE_URL = 'https://centrala.ag3nts.org/dane';
 
+interface Question {
+  id: string;
+  content: string;
+  embedding?: number[];
+  context?: string;
+}
+
 const getArticle = async () => {
   const scrapeWebSkill = new ScrapeWebSkill(process.env.FIRECRAWL_API_KEY, ALLOWED_DOMAINS);
 
@@ -80,7 +87,33 @@ const getQuestions = async () => {
   const response = await sendRequestSkill.getRequest(
     `https://centrala.ag3nts.org/data/${process.env.AI_DEVS_API_KEY}/arxiv.txt`,
   );
-  return response;
+  return response as string;
+};
+
+const prepareQuestions = async (allQuestions: string): Promise<Question[]> => {
+  const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
+
+  const questions = allQuestions
+    .split('\n')
+    .filter((question) => !!question)
+    .map((question) => ({ id: question.split('=')[0], content: question.split('=')[1] }));
+  const embeddingPromises = questions.map(async (question) => {
+    const embedding = await openAiSkill.createEmbedding(question.content);
+    return { ...question, embedding };
+  });
+  const embeddings = await Promise.all(embeddingPromises);
+  return embeddings;
+};
+
+const getQuestionsContext = async (questions: Question[]) => {
+  const memorySkill = new MemorySkill('./src/article', process.env.OPENAI_API_KEY);
+  await memorySkill.recallAll();
+  const contextPromises = questions.map(async (question) => {
+    const context = await memorySkill.recallSimilar(question.embedding!);
+    return { ...question, context };
+  });
+  const contexts = await Promise.all(contextPromises);
+  return contexts;
 };
 
 const main = async () => {
@@ -94,8 +127,14 @@ const main = async () => {
   const expandedParagraphs = await Promise.all(expandedParagraphsPromises);
   // console.log(expandedParagraphs);
 
-  const questions = await getQuestions();
+  const allQuestions = await getQuestions();
+  console.log(allQuestions);
+
+  const questions = await prepareQuestions(allQuestions);
   console.log(questions);
+
+  const questionsWithContext = await getQuestionsContext(questions);
+  console.log(questionsWithContext);
 };
 
 main();
