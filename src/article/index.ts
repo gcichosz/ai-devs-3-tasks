@@ -5,9 +5,8 @@ import { MemorySkill } from '../skills/memory/memory-skill';
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { ScrapeWebSkill } from '../skills/scrape-web/scrape-web-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
+import { SpeechToTextSkill } from '../skills/speech-to-text/speech-to-text-skill';
 
-// TODO: Index audio from the article
-// TODO: Add context to the audio
 // TODO: Get article questions
 // TODO: Answer article questions using RAG prompt
 // TODO: Report answers
@@ -36,6 +35,7 @@ const getArticle = async () => {
 const expandParagraph = async (paragraph: string) => {
   const sendRequestSkill = new SendRequestSkill();
   const imageManipulationSkill = new ImageManipulationSkill();
+  const speechToTextSkill = new SpeechToTextSkill(process.env.GROQ_API_KEY);
   const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
 
   const links = paragraph.match(/\[\S*\]\(\S*\)/g);
@@ -56,6 +56,13 @@ const expandParagraph = async (paragraph: string) => {
       );
       console.log(imageDescription);
       paragraph = paragraph.replace(link, imageDescription);
+    }
+
+    if (fileExtension === 'mp3') {
+      const audioBuffer = await sendRequestSkill.downloadFile(`${ARTICLE_BASE_URL}/${filePath}`);
+      const transcription = await speechToTextSkill.transcribe(audioBuffer);
+      console.log(transcription);
+      paragraph = paragraph.replace(link, transcription);
     }
   }
   return paragraph;
