@@ -24,7 +24,8 @@
     "map": "bun run src/map/index.ts",
     "visualization": "bun run src/visualization/index.ts",
     "categories": "bun run src/categories/index.ts",
-    "article": "bun run src/article/index.ts"
+    "article": "bun run src/article/index.ts",
+    "metadata": "bun run src/metadata/index.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
