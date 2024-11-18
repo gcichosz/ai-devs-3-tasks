@@ -80,6 +80,27 @@ const ingestFiles = async (files: InputFile[], directory: string) => {
   );
 };
 
+const buildContext = async () => {
+  const ingestedFiles: string[] = [];
+  const ingestedReportsDir = './src/metadata/ingested-reports';
+  const reportFiles = await fs.readdir(ingestedReportsDir);
+
+  for (const file of reportFiles) {
+    const reportContent = await fs.readFile(path.join(ingestedReportsDir, file), 'utf-8');
+    ingestedFiles.push(reportContent);
+  }
+
+  const ingestedFactsDir = './src/metadata/ingested-facts';
+  const factFiles = await fs.readdir(ingestedFactsDir);
+
+  for (const file of factFiles) {
+    const factContent = await fs.readFile(path.join(ingestedFactsDir, file), 'utf-8');
+    ingestedFiles.push(factContent);
+  }
+
+  return ingestedFiles.join('\n');
+};
+
 async function main() {
   let existingReports: string[] = [];
   try {
@@ -118,7 +139,9 @@ async function main() {
     await ingestFiles(transcribedFacts, './src/metadata/ingested-facts');
   }
 
-  // TODO: Build context from ingested reports and facts
+  const context = await buildContext();
+  console.log(context);
+
   // TODO: Use extract keywords with context prompt to get keywords for each relevant report
   // TODO: Report result to HQ
 }
