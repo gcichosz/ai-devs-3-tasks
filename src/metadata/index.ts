@@ -18,6 +18,7 @@ interface InputFile {
   type: FileType;
   content: string | Buffer;
   transcription?: string;
+  keywords?: string;
 }
 
 const readFiles = async (directory: string): Promise<InputFile[]> => {
@@ -101,6 +102,23 @@ const buildContext = async () => {
   return ingestedFiles.join('\n');
 };
 
+const extractKeywords = async (files: InputFile[], context: string) => {
+  const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY, process.env.LANGFUSE_SECRET_KEY);
+  const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
+
+  const extractKeywordsPrompt = await langfuseService.getPrompt('extract-keywords-with-context');
+  const [extractKeywordsSystemMessage] = extractKeywordsPrompt.compile({ context });
+
+  const keywordsPromise = files.map(async (file) => {
+    const keywordsResponse = await openAiSkill.completionFull([
+      extractKeywordsSystemMessage as never,
+      { role: 'user', content: file.content as string },
+    ]);
+    return { ...file, keywords: keywordsResponse.choices[0].message.content };
+  });
+  return await Promise.all(keywordsPromise);
+};
+
 async function main() {
   let existingReports: string[] = [];
   try {
@@ -142,7 +160,13 @@ async function main() {
   const context = await buildContext();
   console.log(context);
 
-  // TODO: Use extract keywords with context prompt to get keywords for each relevant report
+  const reportFiles = await readFiles('./src/metadata/reports');
+  const textReports = reportFiles.filter((file) => file.type === FileType.TXT);
+  console.log(textReports.map((file) => file.name));
+
+  const reportsWithKeywords = await extractKeywords(textReports, context);
+  console.log(reportsWithKeywords.map((report) => report.keywords));
+
   // TODO: Report result to HQ
 }
 
