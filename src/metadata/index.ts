@@ -20,21 +20,16 @@ interface InputFile {
   transcription?: string;
 }
 
-// TODO: Filter facts
-// TODO: Convert facts to files with metadata
-// TODO: ...
-
-const readFiles = async (): Promise<InputFile[]> => {
-  const filesDirectory = './src/metadata/reports';
-  const filenames = await fs.readdir(filesDirectory);
+const readFiles = async (directory: string): Promise<InputFile[]> => {
+  const filenames = await fs.readdir(directory);
 
   const fileContents = await Promise.all(
     filenames.map(async (filename) => {
       const extension = path.extname(filename).slice(1) as FileType;
       const fileContent =
         extension === FileType.TXT
-          ? await fs.readFile(path.join(filesDirectory, filename), 'utf-8')
-          : await fs.readFile(path.join(filesDirectory, filename));
+          ? await fs.readFile(path.join(directory, filename), 'utf-8')
+          : await fs.readFile(path.join(directory, filename));
       return { name: filename, type: extension, content: fileContent };
     }),
   );
@@ -70,7 +65,7 @@ const transcribeFiles = async (files: InputFile[]): Promise<InputFile[]> => {
   return await Promise.all(transcriptionPromise);
 };
 
-const ingestFiles = async (files: InputFile[]) => {
+const ingestFiles = async (files: InputFile[], directory: string) => {
   await Promise.all(
     files.map(async (file) => {
       const data = {
@@ -80,31 +75,52 @@ const ingestFiles = async (files: InputFile[]) => {
         },
       };
 
-      await fs.writeFile(
-        path.join('./src/metadata/ingested-reports', `${file.name}.json`),
-        JSON.stringify(data, null, 2),
-      );
+      await fs.writeFile(path.join(directory, `${file.name}.json`), JSON.stringify(data, null, 2));
     }),
   );
 };
 
 async function main() {
-  let existingFiles: string[] = [];
+  let existingReports: string[] = [];
   try {
-    existingFiles = await fs.readdir('./src/metadata/ingested-reports');
+    existingReports = await fs.readdir('./src/metadata/ingested-reports');
   } catch {
     await fs.mkdir('./src/metadata/ingested-reports', { recursive: true });
   }
 
-  if (!existingFiles.length) {
-    const files = await readFiles();
-    console.log(files.map((file) => file.name));
+  if (!existingReports.length) {
+    const reportFiles = await readFiles('./src/metadata/reports');
+    console.log(reportFiles.map((file) => file.name));
 
-    const transcribedFiles = await transcribeFiles(files);
-    console.log(transcribedFiles.map((file) => file.transcription));
+    const transcribedReports = await transcribeFiles(reportFiles);
+    console.log(transcribedReports.map((file) => file.transcription));
 
-    await ingestFiles(transcribedFiles);
+    await ingestFiles(transcribedReports, './src/metadata/ingested-reports');
   }
+
+  let existingFacts: string[] = [];
+  try {
+    existingFacts = await fs.readdir('./src/metadata/ingested-facts');
+  } catch {
+    await fs.mkdir('./src/metadata/ingested-facts', { recursive: true });
+  }
+
+  if (!existingFacts.length) {
+    const factFiles = await readFiles('./src/metadata/facts');
+    console.log(factFiles.map((file) => file.name));
+
+    const relevantFacts = factFiles.filter((file) => !file.content.includes('entry deleted'));
+    console.log(relevantFacts.map((file) => file.name));
+
+    const transcribedFacts = await transcribeFiles(relevantFacts);
+    console.log(transcribedFacts.map((file) => file.transcription));
+
+    await ingestFiles(transcribedFacts, './src/metadata/ingested-facts');
+  }
+
+  // TODO: Build context from ingested reports and facts
+  // TODO: Use extract keywords with context prompt to get keywords for each relevant report
+  // TODO: Report result to HQ
 }
 
 main();
