@@ -1,3 +1,4 @@
+import { observeOpenAI } from 'langfuse';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam, CreateEmbeddingResponse } from 'openai/resources/index.mjs';
 
@@ -7,7 +8,7 @@ export class OpenAISkill {
   private openai: OpenAI;
 
   constructor(private readonly openAiApiKey: string) {
-    this.openai = new OpenAI({ apiKey: openAiApiKey });
+    this.openai = observeOpenAI(new OpenAI({ apiKey: openAiApiKey }));
   }
 
   private async completion(
