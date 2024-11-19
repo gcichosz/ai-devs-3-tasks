@@ -6,7 +6,7 @@ import { ImageManipulationSkill } from '../skills/image-manipulation/image-manip
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { SpeechToTextSkill } from '../skills/speech-to-text/speech-to-text-skill';
-import { LangfuseService } from '../utils/lang-fuse/langfuse-service';
+import { LangfuseService } from '../utils/langfuse/langfuse-service';
 
 enum FileType {
   TXT = 'txt',

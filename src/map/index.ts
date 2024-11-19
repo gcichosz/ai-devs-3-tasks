@@ -1,6 +1,6 @@
 import { ImageManipulationSkill } from '../skills/image-manipulation/image-manipulation-skill';
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
-import { LangfuseService } from '../utils/lang-fuse/langfuse-service';
+import { LangfuseService } from '../utils/langfuse/langfuse-service';
 
 // TODO: Use LLM to analyze map fragments and determine the most likely city based on the analysis results
 // TODO: Identify any outlier results that might be from a different city

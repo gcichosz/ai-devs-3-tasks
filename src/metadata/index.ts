@@ -3,7 +3,7 @@ import path from 'path';
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
-import { LangfuseService } from '../utils/lang-fuse/langfuse-service';
+import { LangfuseService } from '../utils/langfuse/langfuse-service';
 
 interface InputFile {
   name: string;
