@@ -43,10 +43,10 @@ export class OpenAISkill {
     return (await this.completion(messages, model, false, jsonMode)) as OpenAI.Chat.Completions.ChatCompletion;
   }
 
-  async createEmbedding(text: string): Promise<number[]> {
+  async createEmbedding(text: string, model: string = 'text-embedding-3-large'): Promise<number[]> {
     try {
       const response: CreateEmbeddingResponse = await this.openai.embeddings.create({
-        model: 'text-embedding-3-large',
+        model,
         input: text,
       });
       return response.data[0].embedding;

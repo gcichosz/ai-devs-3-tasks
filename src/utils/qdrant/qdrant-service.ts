@@ -10,12 +10,12 @@ export class QdrantService {
     });
   }
 
-  async createCollection(collectionName: string) {
+  async createCollection(collectionName: string, vectorSize: number = 3072) {
     const collections = await this.qdrantClient.getCollections();
     if (collections.collections.some((c) => c.name === collectionName)) {
       return;
     }
 
-    await this.qdrantClient.createCollection(collectionName, { vectors: { size: 1024, distance: 'Cosine' } });
+    await this.qdrantClient.createCollection(collectionName, { vectors: { size: vectorSize, distance: 'Cosine' } });
   }
 }
