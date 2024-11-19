@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 import { AppError } from '../../errors';
 
@@ -12,7 +12,7 @@ export class SendRequestSkill {
       });
       return response.data;
     } catch (error) {
-      console.log(error);
+      console.error((error as AxiosError).response?.data);
       throw new AppError('Failed to send POST request', { error });
     }
   }
@@ -22,7 +22,7 @@ export class SendRequestSkill {
       const response = await axios.get(url);
       return response.data;
     } catch (error) {
-      console.log(error);
+      console.error((error as AxiosError).response?.data);
       throw new AppError('Failed to send GET request', { error });
     }
   }
