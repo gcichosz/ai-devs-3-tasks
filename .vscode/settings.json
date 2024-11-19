@@ -5,9 +5,5 @@
       "source.fixAll": "always"
     }
   },
-  "cSpell.words": [
-    "FIRECRAWL",
-    "Langfuse",
-    "OPENAI"
-  ]
+  "cSpell.words": ["FIRECRAWL", "Langfuse", "OPENAI", "Qdrant"]
 }
