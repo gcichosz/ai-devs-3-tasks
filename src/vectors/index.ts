@@ -5,13 +5,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { QdrantService } from '../utils/qdrant/qdrant-service';
 
-// TODO: Create embedding for the search query: "W raporcie, z którego dnia znajduje się wzmianka o kradzieży prototypu broni?"
 // TODO: Search vector database with the query embedding (limit: 1)
 // TODO: Format the date as YYYY-MM-DD
 // TODO: Send the formatted date to centrala.ag3nts.org/report (task: "wektory", answer: formatted date)
 // TODO: Add keywords to the metadata
 
 const QDRANT_COLLECTION_NAME = 'weapons-tests';
+const QUERY = 'W raporcie, z którego dnia znajduje się wzmianka o kradzieży prototypu broni?';
 
 interface ReportDocument {
   text: string;
@@ -81,6 +81,10 @@ const main = async () => {
   console.log(embeddedReports);
 
   await saveReports(embeddedReports);
+
+  const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
+  const questionEmbedding = await openAiSkill.createEmbedding(QUERY);
+  console.log(questionEmbedding);
 };
 
 main();
