@@ -13,9 +13,13 @@ export class QdrantService {
   async createCollection(collectionName: string, vectorSize: number = 3072) {
     const collections = await this.qdrantClient.getCollections();
     if (collections.collections.some((c) => c.name === collectionName)) {
-      return;
+      await this.qdrantClient.deleteCollection(collectionName);
     }
 
     await this.qdrantClient.createCollection(collectionName, { vectors: { size: vectorSize, distance: 'Cosine' } });
+  }
+
+  async upsert(collectionName: string, points: { id: string; vector: number[]; payload: Record<string, unknown> }[]) {
+    await this.qdrantClient.upsert(collectionName, { wait: true, points });
   }
 }
