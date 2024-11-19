@@ -3,10 +3,8 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
+import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { QdrantService } from '../utils/qdrant/qdrant-service';
-
-// TODO: Send the formatted date to centrala.ag3nts.org/report (task: "wektory", answer: formatted date)
-// TODO: Add keywords to the metadata
 
 const QDRANT_COLLECTION_NAME = 'weapons-tests';
 const QUERY = 'W raporcie, z którego dnia znajduje się wzmianka o kradzieży prototypu broni?';
@@ -88,6 +86,14 @@ const main = async () => {
 
   const relevantReports = await searchReports(questionEmbedding, qdrantService);
   console.log(relevantReports);
+
+  const sendRequestSkill = new SendRequestSkill();
+  const reportResponse = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'wektory',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer: relevantReports[0]?.payload?.date,
+  });
+  console.log(reportResponse);
 };
 
 main();
