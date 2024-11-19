@@ -5,8 +5,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { QdrantService } from '../utils/qdrant/qdrant-service';
 
-// TODO: Search vector database with the query embedding (limit: 1)
-// TODO: Format the date as YYYY-MM-DD
 // TODO: Send the formatted date to centrala.ag3nts.org/report (task: "wektory", answer: formatted date)
 // TODO: Add keywords to the metadata
 
@@ -66,6 +64,11 @@ const saveReports = async (reports: ReportDocument[], qdrantService: QdrantServi
   await qdrantService.upsert(QDRANT_COLLECTION_NAME, points);
 };
 
+const searchReports = async (questionEmbedding: number[], qdrantService: QdrantService) => {
+  const results = await qdrantService.search(QDRANT_COLLECTION_NAME, questionEmbedding, 1);
+  return results;
+};
+
 const main = async () => {
   const qdrantService = new QdrantService(process.env.QDRANT_URL, process.env.QDRANT_API_KEY);
   const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
@@ -82,6 +85,9 @@ const main = async () => {
 
   const questionEmbedding = await openAiSkill.createEmbedding(QUERY);
   console.log(questionEmbedding);
+
+  const relevantReports = await searchReports(questionEmbedding, qdrantService);
+  console.log(relevantReports);
 };
 
 main();

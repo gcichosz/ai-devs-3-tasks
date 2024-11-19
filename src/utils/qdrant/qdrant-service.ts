@@ -22,4 +22,9 @@ export class QdrantService {
   async upsert(collectionName: string, points: { id: string; vector: number[]; payload: Record<string, unknown> }[]) {
     await this.qdrantClient.upsert(collectionName, { wait: true, points });
   }
+
+  async search(collectionName: string, vector: number[], limit: number = 10) {
+    const results = await this.qdrantClient.search(collectionName, { vector, limit });
+    return results;
+  }
 }
