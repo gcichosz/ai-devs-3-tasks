@@ -60,38 +60,38 @@ const ingestFacts = async (files: InputFile[], directory: string) => {
   await fs.writeFile(path.join(directory, 'ingested-facts.json'), JSON.stringify(ingestedFacts, null, 2));
 };
 
-const buildContext = async () => {
-  const ingestedFiles: string[] = [];
-  const ingestedReportsDir = './src/metadata/ingested-reports';
-  const reportFiles = await fs.readdir(ingestedReportsDir);
+const buildContext = async (file: InputFile, facts: Record<string, unknown>[]) => {
+  const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
+  const peopleResponse = await openAiSkill.completionFull([
+    {
+      role: 'system',
+      content:
+        'Extract the main person full name (first name and last name) from the text. Return only the name without any additional text.',
+    },
+    { role: 'user', content: file.content },
+  ]);
 
-  for (const file of reportFiles) {
-    const reportContent = await fs.readFile(path.join(ingestedReportsDir, file), 'utf-8');
-    ingestedFiles.push(reportContent);
-  }
+  const person = peopleResponse.choices[0].message.content;
 
-  const ingestedFactsDir = './src/metadata/ingested-facts';
-  const factFiles = await fs.readdir(ingestedFactsDir);
+  const relevantFacts = facts.filter((fact) => {
+    const factPerson = (fact.metadata as { person: string }).person;
+    return person === factPerson;
+  });
 
-  for (const file of factFiles) {
-    const factContent = await fs.readFile(path.join(ingestedFactsDir, file), 'utf-8');
-    ingestedFiles.push(factContent);
-  }
-
-  return ingestedFiles.join('\n');
+  return JSON.stringify(relevantFacts.map((fact) => fact.metadata));
 };
 
-const extractKeywords = async (files: InputFile[], context: string) => {
+const extractKeywords = async (files: InputFile[], facts: Record<string, unknown>[]) => {
   const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY, process.env.LANGFUSE_SECRET_KEY);
   const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
-
   const extractKeywordsPrompt = await langfuseService.getPrompt('extract-keywords-with-context');
-  const [extractKeywordsSystemMessage] = extractKeywordsPrompt.compile({ context });
 
   const keywordsPromise = files.map(async (file) => {
+    const relevantFacts = await buildContext(file, facts);
+    const [extractKeywordsSystemMessage] = extractKeywordsPrompt.compile({ context: relevantFacts });
     const keywordsResponse = await openAiSkill.completionFull([
       extractKeywordsSystemMessage as never,
-      { role: 'user', content: file.content as string },
+      { role: 'user', content: `${file.name}\n${file.content}` },
     ]);
     return { ...file, keywords: keywordsResponse.choices[0].message.content };
   });
@@ -120,15 +120,11 @@ async function main() {
   const factsJson = JSON.parse(facts);
   console.log(factsJson);
 
-  // TODO: Build context dynamically using matching facts (people)
-  const context = await buildContext();
-  console.log(context);
-
   const reportFiles = await readFiles('./src/metadata/reports');
   const textReports = reportFiles.filter((file) => file.name.endsWith('.txt'));
   console.log(textReports.map((file) => file.name));
 
-  const reportsWithKeywords = await extractKeywords(textReports, context);
+  const reportsWithKeywords = await extractKeywords(textReports, factsJson);
   console.log(reportsWithKeywords.map((report) => report.keywords));
 
   const report = reportsWithKeywords
