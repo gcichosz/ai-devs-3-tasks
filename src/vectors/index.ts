@@ -21,8 +21,7 @@ interface ReportDocument {
   };
 }
 
-const createVectorCollection = async () => {
-  const qdrantService = new QdrantService(process.env.QDRANT_URL, process.env.QDRANT_API_KEY);
+const createVectorCollection = async (qdrantService: QdrantService) => {
   await qdrantService.createCollection(QDRANT_COLLECTION_NAME);
 };
 
@@ -43,9 +42,7 @@ const getReports = async () => {
   return reports;
 };
 
-const createEmbeddings = async (reports: ReportDocument[]) => {
-  const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
-
+const createEmbeddings = async (reports: ReportDocument[], openAiSkill: OpenAISkill) => {
   const embeddedReports = await Promise.all(
     reports.map(async (report) => {
       const embedding = await openAiSkill.createEmbedding(report.text);
@@ -56,9 +53,7 @@ const createEmbeddings = async (reports: ReportDocument[]) => {
   return embeddedReports;
 };
 
-const saveReports = async (reports: ReportDocument[]) => {
-  const qdrantService = new QdrantService(process.env.QDRANT_URL, process.env.QDRANT_API_KEY);
-
+const saveReports = async (reports: ReportDocument[], qdrantService: QdrantService) => {
   const points = reports.map((report) => ({
     id: uuidv4(),
     vector: report.embedding!,
@@ -72,17 +67,19 @@ const saveReports = async (reports: ReportDocument[]) => {
 };
 
 const main = async () => {
-  await createVectorCollection();
+  const qdrantService = new QdrantService(process.env.QDRANT_URL, process.env.QDRANT_API_KEY);
+  const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
+
+  await createVectorCollection(qdrantService);
 
   const reports = await getReports();
   console.log(reports);
 
-  const embeddedReports = await createEmbeddings(reports);
+  const embeddedReports = await createEmbeddings(reports, openAiSkill);
   console.log(embeddedReports);
 
-  await saveReports(embeddedReports);
+  await saveReports(embeddedReports, qdrantService);
 
-  const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
   const questionEmbedding = await openAiSkill.createEmbedding(QUERY);
   console.log(questionEmbedding);
 };
