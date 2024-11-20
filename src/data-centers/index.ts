@@ -2,7 +2,6 @@ import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { LangfuseService } from '../utils/langfuse/langfuse-service';
 
-// TODO: Send query to database
 // TODO: Send report to headquarters
 
 const fetchTableStructure = async (tableName: string) => {
@@ -40,6 +39,16 @@ const prepareQuery = async (tables: string[]) => {
   return response.choices[0].message.content ?? '';
 };
 
+const sendQuery = async (query: string) => {
+  const sendRequestSkill = new SendRequestSkill();
+  const queryResponse = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/apidb', {
+    task: 'database',
+    apikey: process.env.AI_DEVS_API_KEY,
+    query,
+  });
+  return queryResponse.reply;
+};
+
 const main = async () => {
   const usersTable = await fetchTableStructure('users');
   console.log(usersTable);
@@ -49,6 +58,9 @@ const main = async () => {
 
   const query = await prepareQuery([usersTable['Create Table'], dataCentersTable['Create Table']] as string[]);
   console.log(query);
+
+  const queryResponse = await sendQuery(query);
+  console.log(queryResponse);
 };
 
 main();
