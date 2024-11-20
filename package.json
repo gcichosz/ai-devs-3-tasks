@@ -26,7 +26,8 @@
     "categories": "bun run src/categories/index.ts",
     "article": "bun run src/article/index.ts",
     "metadata": "bun run src/metadata/index.ts",
-    "vectors": "bun run src/vectors/index.ts"
+    "vectors": "bun run src/vectors/index.ts",
+    "data-centers": "bun run src/data-centers/index.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
