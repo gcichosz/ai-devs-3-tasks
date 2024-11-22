@@ -1,20 +1,20 @@
 import { promises as fs } from 'fs';
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
+import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { LangfuseService } from '../utils/langfuse/langfuse-service';
 
-// TODO: Create function for querying people API (search by name)
 // TODO: Create function for querying places API (search by city)
 // TODO: Implement tracking mechanism for already checked names and cities (to avoid infinite loops)
 // TODO: Create main search loop
 // TODO: After finding Barbara's city, send report to headquarters
 
-interface Clue {
+interface Clues {
   people: string[];
   places: string[];
 }
 
-const getClues = async (file: string): Promise<Clue> => {
+const getClues = async (file: string): Promise<Clues> => {
   const content = await fs.readFile(file, 'utf-8');
 
   const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY!, process.env.LANGFUSE_SECRET_KEY!);
@@ -37,9 +37,37 @@ const getClues = async (file: string): Promise<Clue> => {
   return JSON.parse(response.choices[0].message.content!);
 };
 
+const trackPeople = async (people: string[], visited: string[]) => {
+  const peopleToTrack = people.filter((person) => !visited.includes(person));
+
+  const sendRequestSkill = new SendRequestSkill();
+  const peoplePromises = peopleToTrack.map((person) =>
+    sendRequestSkill.postRequest('https://centrala.ag3nts.org/people', {
+      apikey: process.env.AI_DEVS_API_KEY,
+      query: person,
+    }),
+  );
+  return await Promise.all(peoplePromises);
+};
+
 const main = async () => {
-  const clue = await getClues('./src/loop/people/barbara.txt');
-  console.log(clue);
+  const visited: Clues = {
+    people: ['BARBARA'],
+    places: [],
+  };
+
+  let clues: Clues;
+  try {
+    const savedClues = await fs.readFile('./src/loop/clues.json', 'utf-8');
+    clues = JSON.parse(savedClues);
+  } catch {
+    clues = await getClues('./src/loop/people/barbara.txt');
+    await fs.writeFile('./src/loop/clues.json', JSON.stringify(clues, null, 2));
+  }
+  console.log(clues);
+
+  const peopleInformation = await trackPeople(clues.people, visited.people);
+  console.log(peopleInformation);
 };
 
 main();
