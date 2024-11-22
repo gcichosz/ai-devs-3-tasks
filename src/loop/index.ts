@@ -4,7 +4,6 @@ import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { LangfuseService } from '../utils/langfuse/langfuse-service';
 
-// TODO: Create function for querying places API (search by city)
 // TODO: Implement tracking mechanism for already checked names and cities (to avoid infinite loops)
 // TODO: Create main search loop
 // TODO: After finding Barbara's city, send report to headquarters
@@ -50,6 +49,19 @@ const trackPeople = async (people: string[], visited: string[]) => {
   return await Promise.all(peoplePromises);
 };
 
+const trackPlaces = async (places: string[], visited: string[]) => {
+  const placesToTrack = places.filter((place) => !visited.includes(place));
+
+  const sendRequestSkill = new SendRequestSkill();
+  const placesPromises = placesToTrack.map((place) =>
+    sendRequestSkill.postRequest('https://centrala.ag3nts.org/places', {
+      apikey: process.env.AI_DEVS_API_KEY,
+      query: place,
+    }),
+  );
+  return await Promise.all(placesPromises);
+};
+
 const main = async () => {
   const visited: Clues = {
     people: ['BARBARA'],
@@ -68,6 +80,9 @@ const main = async () => {
 
   const peopleInformation = await trackPeople(clues.people, visited.people);
   console.log(peopleInformation);
+
+  const placesInformation = await trackPlaces(clues.places, visited.places);
+  console.log(placesInformation);
 };
 
 main();
