@@ -94,6 +94,17 @@ const updateClues = async (
   };
 };
 
+const report = async (answer: string) => {
+  const sendRequestSkill = new SendRequestSkill();
+  const response = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'loop',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer,
+  });
+  console.log('Report response:', response);
+  return response.code;
+};
+
 const main = async () => {
   const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY!);
 
@@ -136,6 +147,19 @@ const main = async () => {
     console.log('Place clues:', placeClues);
     const peopleClues = await checkSurveillance(clues.places, visited.places, 'places');
     console.log('People clues:', peopleClues);
+
+    const barbaraIndex = peopleClues
+      .map((clue) => clue.message)
+      .findIndex((clue) => (clue as string).includes('BARBARA'));
+    if (barbaraIndex !== -1) {
+      const tracksToCheck = Array.from(clues.places).filter((track) => !visited.places.has(track));
+      const answer = tracksToCheck[barbaraIndex];
+      console.log(answer);
+      const reportCode = await report(answer);
+      if (reportCode === 0) {
+        break;
+      }
+    }
 
     visited = updateVisited(visited, clues.people, clues.places);
     clues = await updateClues(clues, peopleClues as never, placeClues as never, openAiSkill);
