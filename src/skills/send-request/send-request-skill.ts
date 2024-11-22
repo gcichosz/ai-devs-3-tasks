@@ -1,7 +1,5 @@
 import axios, { AxiosError } from 'axios';
 
-import { AppError } from '../../errors';
-
 export class SendRequestSkill {
   async postRequest(url: string, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     try {
@@ -13,7 +11,7 @@ export class SendRequestSkill {
       return response.data;
     } catch (error) {
       console.error((error as AxiosError).response?.data);
-      throw new AppError('Failed to send POST request', { error });
+      return (error as AxiosError).response?.data as Record<string, unknown>;
     }
   }
 
@@ -23,7 +21,7 @@ export class SendRequestSkill {
       return response.data;
     } catch (error) {
       console.error((error as AxiosError).response?.data);
-      throw new AppError('Failed to send GET request', { error });
+      return (error as AxiosError).response?.data as Record<string, unknown>;
     }
   }
 
