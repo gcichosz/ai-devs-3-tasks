@@ -76,6 +76,15 @@ const findPath = async (username1: string, username2: string, neo4jService: Neo4
   return result.records[0].get('path');
 };
 
+const report = async (answer: string, sendRequestSkill: SendRequestSkill) => {
+  const response = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'connections',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer,
+  });
+  console.log('Report response:', response);
+};
+
 const neo4jService = new Neo4jService(process.env.NEO4J_URI, process.env.NEO4J_USER, process.env.NEO4J_PASSWORD);
 const main = async () => {
   const sendRequestSkill = new SendRequestSkill();
@@ -105,6 +114,8 @@ const main = async () => {
 
   const shortestPath = await findPath('Rafał', 'Barbara', neo4jService);
   console.log(shortestPath);
+
+  await report(shortestPath.join(', '), sendRequestSkill);
 };
 
 main()
