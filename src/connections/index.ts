@@ -2,7 +2,6 @@ import { promises as fs } from 'fs';
 
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 
-// TODO: Add Graph service
 // TODO: Build a graph of users and connections
 // TODO: Get the shortest path between two users (Rafał and Barbara)
 // TODO: Report result

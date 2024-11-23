@@ -52,6 +52,7 @@
     "faiss-node": "^0.5.1",
     "groq-sdk": "^0.7.0",
     "langfuse": "^3.29.1",
+    "neo4j-driver": "^5.26.0",
     "openai": "^4.70.3",
     "sharp": "^0.33.5",
     "uuid": "^11.0.3"

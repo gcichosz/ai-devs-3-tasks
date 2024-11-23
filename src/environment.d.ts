@@ -10,5 +10,8 @@ declare namespace NodeJS {
     QDRANT_API_KEY: string;
     QDRANT_URL: string;
     OPENAI_PROJECT_ID: string;
+    NEO4J_URI: string;
+    NEO4J_USER: string;
+    NEO4J_PASSWORD: string;
   }
 }
