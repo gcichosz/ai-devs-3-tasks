@@ -3,7 +3,6 @@ import { promises as fs } from 'fs';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { Neo4jService } from '../utils/neo4j/neo4j-service';
 
-// TODO: Get the shortest path between two users (Rafał and Barbara)
 // TODO: Report result
 
 type User = {
@@ -57,6 +56,26 @@ const saveConnectionsInGraph = async (connections: Connection[], neo4jService: N
   }
 };
 
+const findPath = async (username1: string, username2: string, neo4jService: Neo4jService) => {
+  const [user1, user2] = await Promise.all([
+    neo4jService.findNodeByProperty('User', 'username', username1),
+    neo4jService.findNodeByProperty('User', 'username', username2),
+  ]);
+  if (!user1 || !user2) {
+    throw new Error(`User not found: ${!user1 ? username1 : username2}`);
+  }
+  console.log(user1, user2);
+
+  const cypher = `
+    MATCH (a), (b)
+    WHERE id(a) = $user1Id AND id(b) = $user2Id
+    MATCH p = shortestPath((a)-[:Knows*]-(b))
+    RETURN [node IN nodes(p) | node.username] as path
+  `;
+  const result = await neo4jService.runQuery(cypher, { user1Id: user1.id, user2Id: user2.id });
+  return result.records[0].get('path');
+};
+
 const neo4jService = new Neo4jService(process.env.NEO4J_URI, process.env.NEO4J_USER, process.env.NEO4J_PASSWORD);
 const main = async () => {
   const sendRequestSkill = new SendRequestSkill();
@@ -83,6 +102,9 @@ const main = async () => {
 
   await saveUsersInGraph(users, neo4jService);
   await saveConnectionsInGraph(connections, neo4jService);
+
+  const shortestPath = await findPath('Rafał', 'Barbara', neo4jService);
+  console.log(shortestPath);
 };
 
 main()
