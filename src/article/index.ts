@@ -57,7 +57,7 @@ const expandParagraph = async (paragraph: string) => {
       const imageBuffer = await sendRequestSkill.downloadFile(`${ARTICLE_BASE_URL}/${filePath}`);
       const image = await imageManipulationSkill.prepareImageFromBuffer(imageBuffer);
       const imageDescription = await openAiSkill.vision(
-        'Twoim zadaniem jest zwięzłe opisanie obrazu w języku polskim.',
+        { role: 'system', content: 'Twoim zadaniem jest zwięzłe opisanie obrazu w języku polskim.' },
         image,
       );
       console.log(imageDescription);

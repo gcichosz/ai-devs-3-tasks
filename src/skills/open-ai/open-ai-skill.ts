@@ -56,10 +56,15 @@ export class OpenAISkill {
     }
   }
 
-  async vision(systemPrompt: string, image: string): Promise<string> {
+  async vision(
+    systemPrompt: ChatCompletionMessageParam,
+    image: string,
+    model: string = 'gpt-4o',
+    jsonMode: boolean = false,
+  ): Promise<string> {
     const response = await this.completionFull(
       [
-        { role: 'system', content: systemPrompt },
+        systemPrompt,
         {
           role: 'user',
           content: [
@@ -73,7 +78,8 @@ export class OpenAISkill {
           ],
         },
       ],
-      'gpt-4o',
+      model,
+      jsonMode,
     );
     return response.choices[0].message.content ?? '';
   }
