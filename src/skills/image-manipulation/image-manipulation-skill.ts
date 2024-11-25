@@ -14,4 +14,8 @@ export class ImageManipulationSkill {
       .toBuffer();
     return resizedImageBuffer.toString('base64');
   }
+
+  async saveImageFromBuffer(imageBuffer: Buffer, filePath: string): Promise<void> {
+    await sharp(imageBuffer).resize(2048, 2048, { fit: 'inside' }).png({ compressionLevel: 5 }).toFile(filePath);
+  }
 }
