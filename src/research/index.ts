@@ -1,8 +1,7 @@
 import { promises as fs } from 'fs';
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
-
-// TODO: Report results
+import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 
 interface ChatMessages {
   messages: {
@@ -82,6 +81,14 @@ const main = async () => {
       correctData.push(item.id);
     }
   }
+
+  const sendRequestSkill = new SendRequestSkill();
+  const reportResult = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'research',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer: correctData,
+  });
+  console.log(reportResult);
 };
 
 main();
