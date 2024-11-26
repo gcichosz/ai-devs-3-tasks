@@ -1,5 +1,3 @@
-// TODO: Report the result
-
 import { promises as fs } from 'fs';
 
 import { ImageManipulationSkill } from '../skills/image-manipulation/image-manipulation-skill';
@@ -193,7 +191,7 @@ const getPersonDescription = async (photos: Photo[], langfuseService: LangfuseSe
 
   console.log(getPersonDescriptionResponse);
   const responseJson = JSON.parse(getPersonDescriptionResponse);
-  return responseJson.description as string;
+  return responseJson.descriptions as string;
 };
 
 const main = async () => {
@@ -250,6 +248,13 @@ const main = async () => {
 
   const description = await getPersonDescription(barbaraPhotos, langfuseService, openAiSkill);
   console.log(description);
+
+  const reportResult = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'photos',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer: description,
+  });
+  console.log(reportResult);
 };
 
 main();
