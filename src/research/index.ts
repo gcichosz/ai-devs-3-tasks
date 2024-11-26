@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 
-// TODO: Fine-tune model
-// TODO: Verify data with a fine-tuned model
+import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
+
 // TODO: Report results
 
 interface ChatMessages {
@@ -55,6 +55,33 @@ const main = async () => {
   );
 
   await saveMessages(trainingMessages);
+
+  const verifyData = await readFile('verify.txt');
+  console.log(verifyData);
+
+  const data = verifyData.map((line) => ({
+    id: line.split('=')[0],
+    content: line.split('=')[1],
+  }));
+
+  console.log(data);
+
+  const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
+  const correctData = [];
+  for (const item of data) {
+    const response = await openAiSkill.completionFull(
+      [
+        { role: 'system', content: 'Verify data' },
+        { role: 'user', content: item.content },
+      ],
+      'ft:gpt-4o-mini-2024-07-18:grzegorz-cichosz::AXvmIrQ9',
+    );
+    console.log(response.choices[0].message.content);
+
+    if (response.choices[0].message.content === 'correct') {
+      correctData.push(item.id);
+    }
+  }
 };
 
 main();
