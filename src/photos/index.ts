@@ -1,4 +1,3 @@
-// TODO: Get Barbara's photo description
 // TODO: Report the result
 
 import { promises as fs } from 'fs';
@@ -101,7 +100,7 @@ const getPhotoCommands = async (photos: Photo[], langfuseService: LangfuseServic
     photos.map(async (photo) => {
       const getPhotoCommandsResponse = await openAiSkill.vision(
         getPhotoCommandsPromptMessage as never,
-        photo.base64!,
+        [photo.base64!],
         'gpt-4o',
         true,
       );
@@ -164,7 +163,7 @@ const filterPhotos = async (
     photos.map(async (photo) => {
       const filterPhotosResponse = await openAiSkill.vision(
         filterPhotosPromptMessage as never,
-        photo.base64!,
+        [photo.base64!],
         'gpt-4o',
         true,
       );
@@ -179,6 +178,22 @@ const filterPhotos = async (
   );
 
   return filterPortraitPhotos.filter((photo) => photo.isPortrait);
+};
+
+const getPersonDescription = async (photos: Photo[], langfuseService: LangfuseService, openAiSkill: OpenAISkill) => {
+  const getPersonDescriptionPrompt = await langfuseService.getPrompt('get-person-description');
+  const [getPersonDescriptionPromptMessage] = getPersonDescriptionPrompt.compile();
+
+  const getPersonDescriptionResponse = await openAiSkill.vision(
+    getPersonDescriptionPromptMessage as never,
+    photos.map((photo) => photo.base64!),
+    'gpt-4o',
+    true,
+  );
+
+  console.log(getPersonDescriptionResponse);
+  const responseJson = JSON.parse(getPersonDescriptionResponse);
+  return responseJson.description as string;
 };
 
 const main = async () => {
@@ -226,10 +241,15 @@ const main = async () => {
     } while (photosToFix.length > 0);
 
     console.log(fixedPhotos.map((photo) => photo.filename));
-
-    const barbaraPhotos = await filterPhotos(fixedPhotos, langfuseService, openAiSkill);
-    console.log(barbaraPhotos.map((photo) => photo.filename));
   }
+
+  const barbaraPhotos = FROM_CACHE
+    ? await loadFromCache(['IMG_1410_FXER.PNG', 'IMG_1443_FT12.PNG', 'IMG_559_NRR7.PNG'], imageManipulationSkill)
+    : await filterPhotos(fixedPhotos, langfuseService, openAiSkill);
+  console.log(barbaraPhotos.map((photo) => photo.filename));
+
+  const description = await getPersonDescription(barbaraPhotos, langfuseService, openAiSkill);
+  console.log(description);
 };
 
 main();

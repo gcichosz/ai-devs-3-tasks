@@ -58,29 +58,24 @@ export class OpenAISkill {
 
   async vision(
     systemPrompt: ChatCompletionMessageParam,
-    image: string,
+    images: string[],
     model: string = 'gpt-4o',
     jsonMode: boolean = false,
   ): Promise<string> {
-    const response = await this.completionFull(
-      [
-        systemPrompt,
+    const imageMessages = images.map((image) => ({
+      role: 'user',
+      content: [
         {
-          role: 'user',
-          content: [
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:image/png;base64,${image}`,
-                detail: 'high',
-              },
-            },
-          ],
+          type: 'image_url',
+          image_url: {
+            url: `data:image/png;base64,${image}`,
+            detail: 'high',
+          },
         },
       ],
-      model,
-      jsonMode,
-    );
+    }));
+
+    const response = await this.completionFull([systemPrompt, ...(imageMessages as never)], model, jsonMode);
     console.log(JSON.stringify(response.choices[0].message));
     return response.choices[0].message.content ?? '';
   }

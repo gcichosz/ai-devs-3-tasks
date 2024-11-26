@@ -58,7 +58,7 @@ const expandParagraph = async (paragraph: string) => {
       const image = await imageManipulationSkill.prepareImageFromBuffer(imageBuffer);
       const imageDescription = await openAiSkill.vision(
         { role: 'system', content: 'Twoim zadaniem jest zwięzłe opisanie obrazu w języku polskim.' },
-        image,
+        [image],
       );
       console.log(imageDescription);
       paragraph = paragraph.replace(link, imageDescription);
