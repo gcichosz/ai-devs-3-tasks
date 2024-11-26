@@ -1,7 +1,5 @@
 import { promises as fs } from 'fs';
 
-// TODO: Convert correct data to fine-tuning JSONL
-// TODO: Combine fine-tuning data
 // TODO: Fine-tune model
 // TODO: Verify data with a fine-tuned model
 // TODO: Report results
@@ -37,18 +35,26 @@ const translateToFineTuningMessages = (data: string[], label: string) => {
   }));
 };
 
-const saveMessages = async (messages: ChatMessages[], label: string) => {
-  await fs.writeFile(`./src/research/${label}.jsonl`, messages.map((msg) => JSON.stringify(msg)).join('\n'));
+const saveMessages = async (messages: ChatMessages[]) => {
+  await fs.writeFile(`./src/research/training-data.jsonl`, messages.map((msg) => JSON.stringify(msg)).join('\n'));
 };
 
 const main = async () => {
-  const incorrectData = await readFile('incorrect.txt');
-  console.log(JSON.stringify(incorrectData, null, 2));
+  const trainingMessages: ChatMessages[] = [];
 
-  const incorrectMessages = translateToFineTuningMessages(incorrectData, 'incorrect');
-  console.log(JSON.stringify(incorrectMessages, null, 2));
+  await Promise.all(
+    ['incorrect', 'correct'].map(async (label) => {
+      const fileData = await readFile(`${label}.txt`);
+      console.log(JSON.stringify(fileData, null, 2));
 
-  await saveMessages(incorrectMessages, 'incorrect');
+      const messages = translateToFineTuningMessages(fileData, label);
+      console.log(JSON.stringify(messages, null, 2));
+
+      trainingMessages.push(...messages);
+    }),
+  );
+
+  await saveMessages(trainingMessages);
 };
 
 main();
