@@ -1,4 +1,3 @@
-// TODO: Figure out which pictures show Barbara
 // TODO: Get Barbara's photo description
 // TODO: Report the result
 
@@ -9,12 +8,15 @@ import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { LangfuseService } from '../utils/langfuse/langfuse-service';
 
+const FROM_CACHE = true;
+
 interface Photo {
   filename: string;
   url?: string;
   buffer?: Buffer;
   base64?: string;
   command?: string;
+  isPortrait?: boolean;
 }
 
 const startConversation = async (sendRequestSkill: SendRequestSkill) => {
@@ -137,6 +139,48 @@ const improvePhotos = async (photos: Photo[], sendRequestSkill: SendRequestSkill
   );
 };
 
+const loadFromCache = async (filenames: string[], imageManipulationSkill: ImageManipulationSkill): Promise<Photo[]> => {
+  const files = await Promise.all(
+    filenames.map(async (filename) => {
+      const buffer = await fs.readFile(`./src/photos/files/${filename}`);
+      return {
+        filename,
+        buffer,
+      };
+    }),
+  );
+  return await preparePhotos(files, imageManipulationSkill);
+};
+
+const filterPhotos = async (
+  photos: Photo[],
+  langfuseService: LangfuseService,
+  openAiSkill: OpenAISkill,
+): Promise<Photo[]> => {
+  const filterPhotosPrompt = await langfuseService.getPrompt('filter-portrait-photos');
+  const [filterPhotosPromptMessage] = filterPhotosPrompt.compile();
+
+  const filterPortraitPhotos = await Promise.all(
+    photos.map(async (photo) => {
+      const filterPhotosResponse = await openAiSkill.vision(
+        filterPhotosPromptMessage as never,
+        photo.base64!,
+        'gpt-4o',
+        true,
+      );
+
+      const responseJson = JSON.parse(filterPhotosResponse);
+      console.log(responseJson);
+      return {
+        ...photo,
+        isPortrait: responseJson.isPortrait as boolean,
+      };
+    }),
+  );
+
+  return filterPortraitPhotos.filter((photo) => photo.isPortrait);
+};
+
 const main = async () => {
   const sendRequestSkill = new SendRequestSkill();
   const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY, process.env.LANGFUSE_SECRET_KEY);
@@ -146,36 +190,46 @@ const main = async () => {
   const conversationStart = await startConversation(sendRequestSkill);
   console.log(conversationStart);
 
-  const fixedPhotos: Photo[] = [];
+  const fixedPhotos: Photo[] = FROM_CACHE
+    ? await loadFromCache(
+        ['IMG_1444.PNG', 'IMG_1410_FXER.PNG', 'IMG_1443_FT12.PNG', 'IMG_559_NRR7.PNG'],
+        imageManipulationSkill,
+      )
+    : [];
   let photosToFix: Photo[] = [];
   let getPhotosInstructions = [conversationStart];
 
-  do {
-    const photosUrls = await getPhotosUrls(getPhotosInstructions, langfuseService, openAiSkill);
-    console.log(photosUrls);
+  if (!FROM_CACHE) {
+    do {
+      const photosUrls = await getPhotosUrls(getPhotosInstructions, langfuseService, openAiSkill);
+      console.log(photosUrls);
 
-    const photos = await downloadPhotos(photosUrls, sendRequestSkill);
-    await cachePhotos(photos, imageManipulationSkill);
-    console.log(photos.map((photo) => photo.filename));
+      const photos = await downloadPhotos(photosUrls, sendRequestSkill);
+      await cachePhotos(photos, imageManipulationSkill);
+      console.log(photos.map((photo) => photo.filename));
 
-    const preparedPhotos = await preparePhotos(photos, imageManipulationSkill);
+      const preparedPhotos = await preparePhotos(photos, imageManipulationSkill);
 
-    const commands = await getPhotoCommands(preparedPhotos, langfuseService, openAiSkill);
-    console.log(commands.map((photo) => `${photo.command} ${photo.filename}`));
+      const commands = await getPhotoCommands(preparedPhotos, langfuseService, openAiSkill);
+      console.log(commands.map((photo) => `${photo.command} ${photo.filename}`));
 
-    fixedPhotos.push(...commands.filter((photo) => photo.command === 'NOOP'));
-    photosToFix = commands.filter((photo) => photo.command !== 'NOOP');
+      fixedPhotos.push(...commands.filter((photo) => photo.command === 'NOOP'));
+      photosToFix = commands.filter((photo) => photo.command !== 'NOOP');
 
-    const improveResponses = await improvePhotos(photosToFix, sendRequestSkill);
-    console.log(improveResponses);
+      const improveResponses = await improvePhotos(photosToFix, sendRequestSkill);
+      console.log(improveResponses);
 
-    getPhotosInstructions = improveResponses as string[];
-    console.log(getPhotosInstructions);
-    console.log('Photos to fix:');
-    console.log(photosToFix.map((photo) => photo.filename));
-  } while (photosToFix.length > 0);
+      getPhotosInstructions = improveResponses as string[];
+      console.log(getPhotosInstructions);
+      console.log('Photos to fix:');
+      console.log(photosToFix.map((photo) => photo.filename));
+    } while (photosToFix.length > 0);
 
-  console.log(fixedPhotos.map((photo) => photo.filename));
+    console.log(fixedPhotos.map((photo) => photo.filename));
+
+    const barbaraPhotos = await filterPhotos(fixedPhotos, langfuseService, openAiSkill);
+    console.log(barbaraPhotos.map((photo) => photo.filename));
+  }
 };
 
 main();

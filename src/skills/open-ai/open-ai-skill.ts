@@ -81,6 +81,7 @@ export class OpenAISkill {
       model,
       jsonMode,
     );
+    console.log(JSON.stringify(response.choices[0].message));
     return response.choices[0].message.content ?? '';
   }
 }
