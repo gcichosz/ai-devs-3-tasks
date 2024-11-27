@@ -7,6 +7,7 @@ import {
 } from 'langfuse';
 import type { ChatCompletion, ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
+// TODO: Move to services
 export class LangfuseService {
   private readonly langfuse: Langfuse;
 

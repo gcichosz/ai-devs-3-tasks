@@ -4,6 +4,7 @@ import type { ChatCompletionMessageParam, CreateEmbeddingResponse } from 'openai
 
 import { AppError } from '../../errors';
 
+// TODO: Refactor to OpenAIService
 export class OpenAISkill {
   private openai: OpenAI;
 
@@ -35,6 +36,7 @@ export class OpenAISkill {
     }
   }
 
+  // TODO: Refactor to one parameter with named properties
   async completionFull(
     messages: ChatCompletionMessageParam[],
     model: string = 'gpt-4o-mini',
