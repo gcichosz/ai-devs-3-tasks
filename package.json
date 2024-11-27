@@ -31,7 +31,8 @@
     "loop": "bun run src/loop/index.ts",
     "connections": "bun run src/connections/index.ts",
     "photos": "bun run src/photos/index.ts",
-    "research": "bun run src/research/index.ts"
+    "research": "bun run src/research/index.ts",
+    "softo": "bun run src/softo/index.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
