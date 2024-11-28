@@ -16,3 +16,12 @@ export interface IWebPage {
   description?: string;
   content?: string;
 }
+
+export interface IState {
+  answered: boolean;
+  answers: {
+    id: string;
+    answer: string;
+  }[];
+  visitedLinks: IWebPage[];
+}

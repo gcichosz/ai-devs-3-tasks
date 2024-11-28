@@ -3,9 +3,7 @@ import { ScrapeWebSkill } from '../skills/scrape-web/scrape-web-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { LangfuseService } from '../utils/langfuse/langfuse-service';
 import { AssistantService } from './assistant-service';
-import type { IAssistantTools, IWebPage } from './types';
-
-// TODO: Add visited links tracking
+import type { IAssistantTools, IState, IWebPage } from './types';
 
 const tools: IAssistantTools[] = [
   {
@@ -44,11 +42,12 @@ const main = async () => {
   const questions = await fetchQuestions(sendRequestSkill);
   console.log(questions);
 
-  const state: { answered: boolean; answers: { id: string; answer: string }[] } = { answered: false, answers: [] };
+  const state: IState = { answered: false, answers: [], visitedLinks: [] };
   for (const [questionId, question] of Object.entries(questions)) {
     state.answered = false;
+    state.visitedLinks = [];
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 10; i++) {
       const nextStep = await assistantService.understand([{ role: 'user', content: question }], tools, knownLinks);
       console.log('Next step:');
       console.log(nextStep);
@@ -57,6 +56,7 @@ const main = async () => {
         const scrapePageResult = await assistantService.scrapePage(
           [{ role: 'user', content: nextStep.plan.query }],
           knownLinks,
+          state.visitedLinks,
         );
         console.log('Scraped page:');
         console.log(scrapePageResult);
@@ -64,6 +64,7 @@ const main = async () => {
         const existingLink = knownLinks.find((knownLink) => knownLink.url === scrapePageResult.url);
         if (existingLink) {
           existingLink.content = scrapePageResult.content;
+          state.visitedLinks.push({ url: existingLink.url, description: existingLink.description });
         } else {
           knownLinks.push({ ...scrapePageResult });
         }
@@ -79,7 +80,8 @@ const main = async () => {
         }
         console.log('Known links:');
         console.log(knownLinks);
-        continue;
+        console.log('Visited links:');
+        console.log(state.visitedLinks);
       }
       if (nextStep.plan.tool === 'answer') {
         const questionAnswer = await assistantService.answerQuestion(
@@ -90,17 +92,15 @@ const main = async () => {
         console.log(questionAnswer);
         state.answered = true;
         state.answers.push({ id: questionId, answer: questionAnswer.answer });
-        continue;
       }
 
       if (state.answered) {
         break;
       }
     }
-
-    break;
   }
 
+  console.log('Final answers:');
   console.log(state.answers);
 };
 

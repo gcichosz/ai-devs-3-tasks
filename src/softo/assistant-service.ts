@@ -32,10 +32,19 @@ export class AssistantService {
     return JSON.parse(understanding.choices[0].message.content as string) as INextStep;
   }
 
-  async scrapePage(messages: ChatCompletionMessageParam[], knownLinks: IWebPage[]): Promise<IWebPage> {
+  async scrapePage(
+    messages: ChatCompletionMessageParam[],
+    knownLinks: IWebPage[],
+    visitedLinks: IWebPage[],
+  ): Promise<IWebPage> {
     const selectPagePrompt = await this.langfuseService.getPrompt('softo-select-page');
     const [selectPagePromptMessage] = selectPagePrompt.compile({
-      knownLinks: knownLinks.map((link) => `<link>${link.url}: ${link.description}</link>`).join('\n'),
+      knownLinks: knownLinks
+        .map((link) => `<available_link>${link.url}: ${link.description}</available_link>`)
+        .join('\n'),
+      visitedLinks: visitedLinks
+        .map((link) => `<visited_link>${link.url}: ${link.description}</visited_link>`)
+        .join('\n'),
     });
 
     const linkSelection = (await this.openaiService.completionFull(
