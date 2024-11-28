@@ -13,6 +13,6 @@ export interface INextStep {
 
 export interface IWebPage {
   url: string;
-  description: string;
-  summary?: string;
+  description?: string;
+  content?: string;
 }

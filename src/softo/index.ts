@@ -5,9 +5,6 @@ import { LangfuseService } from '../utils/langfuse/langfuse-service';
 import { AssistantService } from './assistant-service';
 import type { IAssistantTools, IWebPage } from './types';
 
-// TODO: Save visited links summary and their links
-// TODO: Try answering questions based on the scraped page
-// TODO: Pick best link to follow (rank potential links)
 // TODO: Add visited links tracking
 
 const tools: IAssistantTools[] = [
@@ -47,23 +44,64 @@ const main = async () => {
   const questions = await fetchQuestions(sendRequestSkill);
   console.log(questions);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  for (const [_, question] of Object.entries(questions)) {
-    const context = '';
-    const nextStep = await assistantService.understand([{ role: 'user', content: question }], tools, context);
-    console.log('Next step:');
-    console.log(nextStep);
+  const state: { answered: boolean; answers: { id: string; answer: string }[] } = { answered: false, answers: [] };
+  for (const [questionId, question] of Object.entries(questions)) {
+    state.answered = false;
 
-    if (nextStep.plan.tool === 'scrape_page') {
-      const scrapePageResult = await assistantService.scrapePage(
-        [{ role: 'user', content: nextStep.plan.query }],
-        knownLinks,
-      );
-      console.log(scrapePageResult);
+    for (let i = 0; i < 3; i++) {
+      const nextStep = await assistantService.understand([{ role: 'user', content: question }], tools, knownLinks);
+      console.log('Next step:');
+      console.log(nextStep);
+
+      if (nextStep.plan.tool === 'scrape_page') {
+        const scrapePageResult = await assistantService.scrapePage(
+          [{ role: 'user', content: nextStep.plan.query }],
+          knownLinks,
+        );
+        console.log('Scraped page:');
+        console.log(scrapePageResult);
+
+        const existingLink = knownLinks.find((knownLink) => knownLink.url === scrapePageResult.url);
+        if (existingLink) {
+          existingLink.content = scrapePageResult.content;
+        } else {
+          knownLinks.push({ ...scrapePageResult });
+        }
+
+        const pageLinks = await assistantService.getPageLinks(scrapePageResult);
+        console.log('Page links:');
+        console.log(pageLinks);
+
+        for (const link of pageLinks) {
+          if (!knownLinks.some((knownLink) => knownLink.url === link.url)) {
+            knownLinks.push({ url: link.url, description: link.description });
+          }
+        }
+        console.log('Known links:');
+        console.log(knownLinks);
+        continue;
+      }
+      if (nextStep.plan.tool === 'answer') {
+        const questionAnswer = await assistantService.answerQuestion(
+          [{ role: 'user', content: nextStep.plan.query }],
+          knownLinks,
+        );
+        console.log('Answer:');
+        console.log(questionAnswer);
+        state.answered = true;
+        state.answers.push({ id: questionId, answer: questionAnswer.answer });
+        continue;
+      }
+
+      if (state.answered) {
+        break;
+      }
     }
 
     break;
   }
+
+  console.log(state.answers);
 };
 
 main();

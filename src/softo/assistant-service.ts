@@ -15,12 +15,12 @@ export class AssistantService {
   async understand(
     messages: ChatCompletionMessageParam[],
     tools: IAssistantTools[],
-    context: string,
+    knownLinks: IWebPage[],
   ): Promise<INextStep> {
     const understandPrompt = await this.langfuseService.getPrompt('softo-understand');
     const [understandPromptMessage] = understandPrompt.compile({
       tools: tools.map((tool) => `<tool>${tool.name}: ${tool.description}</tool>`).join('\n'),
-      context: context || 'No context provided.',
+      context: this.prepareKnownLinksContext(knownLinks),
     });
 
     const understanding = (await this.openaiService.completionFull(
@@ -32,12 +32,10 @@ export class AssistantService {
     return JSON.parse(understanding.choices[0].message.content as string) as INextStep;
   }
 
-  async scrapePage(messages: ChatCompletionMessageParam[], knownLinks: IWebPage[]) {
+  async scrapePage(messages: ChatCompletionMessageParam[], knownLinks: IWebPage[]): Promise<IWebPage> {
     const selectPagePrompt = await this.langfuseService.getPrompt('softo-select-page');
     const [selectPagePromptMessage] = selectPagePrompt.compile({
-      knownLinks: knownLinks
-        .map((link) => `<link>${link.url}: ${link.description};${link.summary || ''}</link>`)
-        .join('\n'),
+      knownLinks: knownLinks.map((link) => `<link>${link.url}: ${link.description}</link>`).join('\n'),
     });
 
     const linkSelection = (await this.openaiService.completionFull(
@@ -53,6 +51,48 @@ export class AssistantService {
     console.log(selectedLink);
 
     const pageContent = await this.firecrawlService.scrapeUrl(selectedLink.url);
-    return pageContent;
+    return {
+      url: selectedLink.url,
+      content: pageContent.markdown,
+    };
+  }
+
+  async getPageLinks(page: IWebPage): Promise<IWebPage[]> {
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const linksAndImages: IWebPage[] = [];
+
+    let match;
+    while ((match = linkRegex.exec(page.content!)) !== null) {
+      linksAndImages.push({
+        url: 'https://softo.ag3nts.org' + match[2],
+        description: match[1],
+      });
+    }
+
+    return linksAndImages.filter((link) => !link.url.endsWith('.png') && !link.url.endsWith('.jpg'));
+  }
+
+  async answerQuestion(messages: ChatCompletionMessageParam[], knownLinks: IWebPage[]) {
+    const answerQuestionPrompt = await this.langfuseService.getPrompt('softo-answer-question');
+    const [answerQuestionPromptMessage] = answerQuestionPrompt.compile({
+      context: this.prepareKnownLinksContext(knownLinks),
+    });
+
+    const answer = (await this.openaiService.completionFull(
+      [answerQuestionPromptMessage as never, ...messages],
+      'gpt-4o-mini',
+      true,
+    )) as ChatCompletion;
+
+    return JSON.parse(answer.choices[0].message.content as string);
+  }
+
+  private prepareKnownLinksContext(knownLinks: IWebPage[]): string {
+    return knownLinks
+      .map(
+        (link) =>
+          `<page>${link.url}: ${link.description}<content>${link.content || 'Content unknown.'}</content></page>`,
+      )
+      .join('\n');
   }
 }
