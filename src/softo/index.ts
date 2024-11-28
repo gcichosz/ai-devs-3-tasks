@@ -84,10 +84,7 @@ const main = async () => {
         console.log(state.visitedLinks);
       }
       if (nextStep.plan.tool === 'answer') {
-        const questionAnswer = await assistantService.answerQuestion(
-          [{ role: 'user', content: nextStep.plan.query }],
-          knownLinks,
-        );
+        const questionAnswer = await assistantService.answerQuestion([{ role: 'user', content: question }], knownLinks);
         console.log('Answer:');
         console.log(questionAnswer);
         state.answered = true;
