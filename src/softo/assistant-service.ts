@@ -59,17 +59,32 @@ export class AssistantService {
 
   async getPageLinks(page: IWebPage): Promise<IWebPage[]> {
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-    const linksAndImages: IWebPage[] = [];
+    const links: IWebPage[] = [];
 
     let match;
     while ((match = linkRegex.exec(page.content!)) !== null) {
-      linksAndImages.push({
-        url: 'https://softo.ag3nts.org' + match[2],
+      if (match[2].endsWith('.png') || match[2].endsWith('.jpg')) {
+        continue;
+      }
+
+      let url;
+      if (match[2].startsWith('http')) {
+        url = match[2];
+      } else {
+        url = `https://softo.ag3nts.org${match[2]}`;
+      }
+
+      if (match[2].includes(' ')) {
+        url = url.split(' ')[0];
+      }
+
+      links.push({
+        url,
         description: match[1],
       });
     }
 
-    return linksAndImages.filter((link) => !link.url.endsWith('.png') && !link.url.endsWith('.jpg'));
+    return links;
   }
 
   async answerQuestion(messages: ChatCompletionMessageParam[], knownLinks: IWebPage[]) {
