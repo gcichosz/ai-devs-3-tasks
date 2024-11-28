@@ -50,7 +50,7 @@ export class AssistantService {
     };
     console.log(selectedLink);
 
-    const pageContent = await this.firecrawlService.scrapeUrl(selectedLink.url);
+    const pageContent = await this.firecrawlService.scrapeUrl(selectedLink.url, ['markdown'], false);
     return {
       url: selectedLink.url,
       content: pageContent.markdown,

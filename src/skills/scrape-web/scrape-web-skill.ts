@@ -24,12 +24,13 @@ export class ScrapeWebSkill {
   async scrapeUrl(
     url: string,
     formats: ('markdown' | 'html')[] = ['markdown'],
+    onlyMainContent = true,
   ): Promise<{ markdown: string; html: string }> {
     if (!this.isUrlAllowed(url)) {
       throw new Error(`URL not in the list of allowed domains. ${JSON.stringify({ url })}`);
     }
 
-    const scrapeResult = await this.firecrawlApp.scrapeUrl(url, { formats: formats });
+    const scrapeResult = await this.firecrawlApp.scrapeUrl(url, { formats, onlyMainContent });
 
     if (scrapeResult.success) {
       return { markdown: scrapeResult.markdown || '', html: scrapeResult.html || '' };
