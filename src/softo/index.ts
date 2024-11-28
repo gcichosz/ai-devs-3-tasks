@@ -99,6 +99,13 @@ const main = async () => {
 
   console.log('Final answers:');
   console.log(state.answers);
+
+  const reportResult = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'softo',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer: state.answers.reduce((acc, curr) => ({ ...acc, [curr.id]: curr.answer }), {}),
+  });
+  console.log(reportResult);
 };
 
 main();
