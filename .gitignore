@@ -5,3 +5,5 @@ dist/
 .DS_Store
 .husky/_
 CONVENTIONS.md
+
+src/phone/conversations
