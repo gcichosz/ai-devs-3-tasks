@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import { v4 as uuid } from 'uuid';
 
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
+import { loadFromCache } from './cache-service';
 import { Document } from './types';
 
 // Min
@@ -32,64 +33,38 @@ import { Document } from './types';
 // TODO: Map each piece of conversation to its proper place
 
 const getConversations = async (sendRequestSkill: SendRequestSkill): Promise<Document[]> => {
-  const cachedDocuments = await fs.readdir('./src/phone/conversations');
-  if (cachedDocuments.length) {
-    const cachedDocumentsContent = await Promise.all(
-      cachedDocuments.map(async (document) => await fs.readFile(`./src/phone/conversations/${document}`, 'utf-8')),
+  const getOriginalConversations = async () => {
+    const conversationsResponse = await sendRequestSkill.getRequest(
+      `https://centrala.ag3nts.org/data/${process.env.AI_DEVS_API_KEY}/phone_sorted.json`,
     );
-    return cachedDocumentsContent.map((document) => JSON.parse(document));
-  }
-
-  const conversationsResponse = await sendRequestSkill.getRequest(
-    `https://centrala.ag3nts.org/data/${process.env.AI_DEVS_API_KEY}/phone_sorted.json`,
-  );
-  const conversationDocuments = Object.entries(conversationsResponse).map(([id, sentences]) => ({
-    uuid: uuid(),
-    text: (sentences as string[]).join('\n'),
-    metadata: {
-      name: id,
-    },
-  })) as Document[];
-
-  await Promise.all(
-    conversationDocuments.map(async (document) =>
-      fs.writeFile(`./src/phone/conversations/${document.uuid}.json`, JSON.stringify(document)),
-    ),
-  );
-
-  return conversationDocuments;
+    return Object.entries(conversationsResponse).map(([id, sentences]) => ({
+      uuid: uuid(),
+      text: (sentences as string[]).join('\n'),
+      metadata: {
+        name: id,
+      },
+    })) as Document[];
+  };
+  return loadFromCache('./src/phone/conversations', getOriginalConversations);
 };
 
 const loadFacts = async (): Promise<Document[]> => {
-  const cachedDocuments = await fs.readdir('./src/phone/facts');
-  if (cachedDocuments.length) {
-    const cachedDocumentsContent = await Promise.all(
-      cachedDocuments.map(async (document) => await fs.readFile(`./src/phone/facts/${document}`, 'utf-8')),
+  const getOriginalFacts = async () => {
+    const sourceFactFiles = await fs.readdir('./src/phone/source-facts');
+    return Promise.all(
+      sourceFactFiles.map(async (filename) => {
+        const content = await fs.readFile(`./src/phone/source-facts/${filename}`, 'utf-8');
+        return {
+          uuid: uuid(),
+          text: content,
+          metadata: {
+            name: filename,
+          },
+        };
+      }),
     );
-    return cachedDocumentsContent.map((document) => JSON.parse(document));
-  }
-
-  const sourceFactFiles = await fs.readdir('./src/phone/source-facts');
-  const factDocuments = await Promise.all(
-    sourceFactFiles.map(async (filename) => {
-      const content = await fs.readFile(`./src/phone/source-facts/${filename}`, 'utf-8');
-      return {
-        uuid: uuid(),
-        text: content,
-        metadata: {
-          name: filename,
-        },
-      };
-    }),
-  );
-
-  await Promise.all(
-    factDocuments.map(async (document) =>
-      fs.writeFile(`./src/phone/facts/${document.uuid}.json`, JSON.stringify(document)),
-    ),
-  );
-
-  return factDocuments;
+  };
+  return loadFromCache('./src/phone/facts', getOriginalFacts);
 };
 
 const getQuestions = async (sendRequestSkill: SendRequestSkill) => {
