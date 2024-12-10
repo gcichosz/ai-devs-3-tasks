@@ -7,3 +7,4 @@ dist/
 CONVENTIONS.md
 
 src/phone/conversations
+src/phone/facts
