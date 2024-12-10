@@ -6,7 +6,6 @@ import { Document } from './types';
 
 // Min
 // TODO: Identify speakers in each conversation
-// TODO: Fetch phone_questions.json containing questions
 // TODO: Load facts data from previous tasks
 
 // TODO: Create function to extract facts stated by each speaker
@@ -26,6 +25,7 @@ import { Document } from './types';
 
 // TODO: Create answer formatting function according to required structure
 // TODO: Create function to submit answers to centrala
+// TODO: Handle incorrect responses from centrala (add them to context and try again)
 // TODO: Handle response and extract flag
 
 // Max
@@ -61,11 +61,20 @@ const getConversations = async (sendRequestSkill: SendRequestSkill): Promise<Doc
   return conversationDocuments;
 };
 
+const getQuestions = async (sendRequestSkill: SendRequestSkill) => {
+  return await sendRequestSkill.getRequest(
+    `https://centrala.ag3nts.org/data/${process.env.AI_DEVS_API_KEY}/phone_questions.json`,
+  );
+};
+
 const main = async () => {
   const sendRequestSkill = new SendRequestSkill();
 
   const anonymousConversations = await getConversations(sendRequestSkill);
   console.log(anonymousConversations);
+
+  const questions = await getQuestions(sendRequestSkill);
+  console.log(questions);
 };
 
 main();
