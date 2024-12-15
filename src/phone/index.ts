@@ -5,7 +5,7 @@ import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { LangfuseService } from '../utils/langfuse/langfuse-service';
 import { AgentService } from './agent-service';
-import { loadFromCache } from './cache-service';
+import { loadFromCache, saveToCache, tryLoadFromCache } from './cache-service';
 import { Document, State } from './types';
 
 // TODO: Create function to reconstruct conversations based on start/end sentences
@@ -24,7 +24,7 @@ const getConversations = async (sendRequestSkill: SendRequestSkill): Promise<Doc
       },
     })) as Document[];
   };
-  const conversations = await loadFromCache('./src/phone/conversations', getOriginalConversations);
+  const conversations = await tryLoadFromCache('./src/phone/conversations', getOriginalConversations);
   return conversations.sort((a, b) => (a.metadata.name as string).localeCompare(b.metadata.name as string));
 };
 
@@ -44,7 +44,7 @@ const loadFacts = async (): Promise<Document[]> => {
       }),
     );
   };
-  return loadFromCache('./src/phone/facts', getOriginalFacts);
+  return tryLoadFromCache('./src/phone/facts', getOriginalFacts);
 };
 
 const getQuestions = async (sendRequestSkill: SendRequestSkill) => {
@@ -98,7 +98,7 @@ const identifySpeakers = async (
     return identifiedConversations;
   };
 
-  return await loadFromCache('./src/phone/speakers', getSpeakers);
+  return await tryLoadFromCache('./src/phone/speakers', getSpeakers);
 };
 
 const submitAnswers = async (answers: object, answerCandidate: object, sendRequestSkill: SendRequestSkill) => {
@@ -111,6 +111,10 @@ const submitAnswers = async (answers: object, answerCandidate: object, sendReque
       ...answerCandidate,
     },
   });
+};
+
+const loadCachedAnswers = async () => {
+  return await loadFromCache('./src/phone/answers');
 };
 
 const main = async () => {
@@ -131,6 +135,7 @@ const main = async () => {
   console.log('Conversations:', conversations);
 
   const agent = new AgentService(openAIService, langfuseService);
+  const answersCache = await loadCachedAnswers();
   const state: State = {
     // TODO: Add call API tool
     tools: [
@@ -142,14 +147,13 @@ const main = async () => {
         parameters: JSON.stringify({}),
       },
     ],
-    // TODO: Answers cache
-    documents: [],
+    documents: answersCache,
     config: {
       max_steps: 5,
       current_step: 0,
     },
   };
-  const answers = {};
+  const answers: Record<string, string> = {};
   for (const [questionId, question] of Object.entries(questions)) {
     console.log(`❓ Starting to answer question: ${question}`);
 
@@ -176,6 +180,7 @@ const main = async () => {
           state.documents,
         );
         console.log(`💡 Final answer: `, finalAnswer);
+
         const checkAnswerResponse = await submitAnswers(
           answers,
           { [questionId]: finalAnswer.answer },
@@ -185,13 +190,19 @@ const main = async () => {
         const isAnswerCorrect =
           checkAnswerResponse.code !== 0 || (checkAnswerResponse.message as string)?.includes(questionId);
         console.log(`🪙 Is answer correct: `, isAnswerCorrect);
+
         const answerDocument: Document = {
           uuid: uuid(),
           text: `${isAnswerCorrect ? 'Correct' : 'Incorrect'} answer to question "${question}": ${finalAnswer.answer}`,
           metadata: {},
         };
-        state.documents.push(answerDocument);
+        if (state.documents.every((d) => d.text !== answerDocument.text)) {
+          state.documents.push(answerDocument);
+          saveToCache([answerDocument], './src/phone/answers');
+        }
+
         if (isAnswerCorrect) {
+          answers[questionId] = finalAnswer.answer;
           break;
         }
       }
