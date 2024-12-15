@@ -19,7 +19,9 @@ export class AgentService {
   ) {
     const planPrompt = await this.langfuseService.getPrompt('phone-plan');
     const [planPromptMessage] = planPrompt.compile({
-      tools: tools.map((tool) => `<tool>${tool.name}: ${tool.description}</tool>`).join('\n'),
+      tools: tools
+        .map((tool) => `<tool>${tool.name}: ${tool.description}; usage: ${tool.parameters}</tool>`)
+        .join('\n'),
       facts: facts.map((f) => `<fact name="${f.metadata.name}">${f.text}</fact>`).join('\n'),
       conversations: conversations
         .map((c) => `<conversation name="${c.metadata.name}">${c.text}</conversation>`)

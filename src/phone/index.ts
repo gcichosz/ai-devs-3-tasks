@@ -146,6 +146,13 @@ const main = async () => {
         instruction: '...',
         parameters: JSON.stringify({}),
       },
+      {
+        uuid: uuid(),
+        name: 'api_call',
+        description: 'Use this tool to call the API',
+        instruction: '...',
+        parameters: JSON.stringify({ endpoint: 'string', payload: 'object' }),
+      },
     ],
     documents: answersCache,
     config: {
@@ -169,6 +176,22 @@ const main = async () => {
       console.log('➡️ Next move:', nextMove);
       if (!nextMove.tool) {
         break;
+      }
+
+      if (nextMove.tool === 'api_call') {
+        const parameters = nextMove.query;
+        const apiResponse = await sendRequestSkill.postRequest(parameters.endpoint, parameters.payload);
+        console.log('🚀 API response:', apiResponse);
+
+        const apiDocument: Document = {
+          uuid: uuid(),
+          text: `<true_answer endpoint="${parameters.endpoint}" payload="${JSON.stringify(parameters.payload)}">${apiResponse.message}</true_answer>`,
+          metadata: {},
+        };
+        if (state.documents.every((d) => d.text !== apiDocument.text)) {
+          state.documents.push(apiDocument);
+          saveToCache([apiDocument], './src/phone/answers');
+        }
       }
 
       if (nextMove.tool === 'final_answer') {
