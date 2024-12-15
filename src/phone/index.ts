@@ -193,7 +193,7 @@ const main = async () => {
 
         const answerDocument: Document = {
           uuid: uuid(),
-          text: `${isAnswerCorrect ? 'Correct' : 'Incorrect'} answer to question "${question}": ${finalAnswer.answer}`,
+          text: `<${isAnswerCorrect ? 'true' : 'false'}_answer question="${question}">${finalAnswer.answer}</${isAnswerCorrect ? 'true' : 'false'}_answer>`,
           metadata: {},
         };
         if (state.documents.every((d) => d.text !== answerDocument.text)) {
