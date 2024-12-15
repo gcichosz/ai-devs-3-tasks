@@ -4,31 +4,10 @@ import { v4 as uuid } from 'uuid';
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { LangfuseService } from '../utils/langfuse/langfuse-service';
+import { AgentService } from './agent-service';
 import { loadFromCache } from './cache-service';
-import { Document } from './types';
+import { Document, State } from './types';
 
-// Min
-// TODO: Create function to extract facts stated by each speaker
-// TODO: Cross-reference facts with known facts from previous tasks
-// TODO: Identify the liar by finding contradictions
-// TODO: Filter out false information
-
-// TODO: Create function to process each question
-// TODO: Implement logic for conversation content questions
-// TODO: Implement logic for speaker-related questions
-// TODO: Implement logic for API-dependent questions
-// TODO: Implement logic for fact-based questions
-
-// TODO: Create function for API communication
-// TODO: Implement API response processing
-// TODO: Integrate API responses into answers
-
-// TODO: Create answer formatting function according to required structure
-// TODO: Create function to submit answers to centrala
-// TODO: Handle incorrect responses from centrala (add them to context and try again)
-// TODO: Handle response and extract flag
-
-// Max
 // TODO: Create function to reconstruct conversations based on start/end sentences
 // TODO: Map each piece of conversation to its proper place
 
@@ -122,6 +101,18 @@ const identifySpeakers = async (
   return await loadFromCache('./src/phone/speakers', getSpeakers);
 };
 
+const submitAnswers = async (answers: object, answerCandidate: object, sendRequestSkill: SendRequestSkill) => {
+  return await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'phone',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer: {
+      ...{ '01': '', '02': '', '03': '', '04': '', '05': '', '06': '' },
+      ...answers,
+      ...answerCandidate,
+    },
+  });
+};
+
 const main = async () => {
   const sendRequestSkill = new SendRequestSkill();
   const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY, process.env.LANGFUSE_SECRET_KEY);
@@ -138,6 +129,64 @@ const main = async () => {
 
   const conversations = await identifySpeakers(anonymousConversations, facts, langfuseService, openAIService);
   console.log('Conversations:', conversations);
+
+  const agent = new AgentService(openAIService, langfuseService);
+  const state: State = {
+    // TODO: Add call API tool
+    tools: [
+      {
+        uuid: uuid(),
+        name: 'final_answer',
+        description: 'Use this tool to write a message to the user',
+        instruction: '...',
+        parameters: JSON.stringify({}),
+      },
+    ],
+    config: {
+      max_steps: 5,
+      current_step: 0,
+    },
+  };
+  const answers = {};
+  for (const [questionId, question] of Object.entries(questions)) {
+    console.log(`❓ Starting to answer question: ${question}`);
+
+    for (; state.config.current_step < state.config.max_steps; state.config.current_step++) {
+      console.log(`🤔 Planning...`);
+      const nextMove = await agent.plan(
+        [{ role: 'user', content: `Answer the following question based on facts and conversations: ${question}` }],
+        state.tools,
+        facts,
+        conversations,
+      );
+      console.log('➡️ Next move:', nextMove);
+      if (!nextMove.tool) {
+        break;
+      }
+
+      if (nextMove.tool === 'final_answer') {
+        const finalAnswer = await agent.generateAnswer(
+          [{ role: 'user', content: question as string }],
+          facts,
+          conversations,
+          nextMove.query,
+        );
+        console.log(`💡 Final answer: `, finalAnswer);
+        const checkAnswerResponse = await submitAnswers(
+          answers,
+          { [questionId]: finalAnswer.answer },
+          sendRequestSkill,
+        );
+        console.log(`👀 Check answer: `, checkAnswerResponse);
+        // TODO: Handle wrong answer (add it to context)
+        // TODO: Handle correct answer (add it to context)
+        break;
+      }
+    }
+    break;
+  }
+
+  // TODO: Report complete answer
 };
 
 main();
