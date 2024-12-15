@@ -164,6 +164,14 @@ const main = async () => {
   for (const [questionId, question] of Object.entries(questions)) {
     console.log(`❓ Starting to answer question: ${question}`);
 
+    const existingAnswer = state.documents.find((d) => d.text.includes(`<true_answer question="${question}"`));
+    if (existingAnswer) {
+      const answer = existingAnswer.text.match(/<true_answer.*>(.*?)<\/true_answer>/s)?.[1].trim() ?? '';
+      console.log(`😊 Found an answer in cache for question: ${question}: ${answer}`);
+      answers[questionId] = answer;
+      continue;
+    }
+
     for (; state.config.current_step < state.config.max_steps; state.config.current_step++) {
       console.log(`🤔 Planning...`);
       const nextMove = await agent.plan(
