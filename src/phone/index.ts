@@ -238,10 +238,14 @@ const main = async () => {
         }
       }
     }
-    break;
   }
 
-  // TODO: Report complete answer
+  const result = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'phone',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer: answers,
+  });
+  console.log('🏆 Report response:', result);
 };
 
 main();
