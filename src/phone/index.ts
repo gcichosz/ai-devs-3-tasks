@@ -187,8 +187,8 @@ const main = async () => {
           sendRequestSkill,
         );
         console.log(`👀 Check answer: `, checkAnswerResponse);
-        const isAnswerCorrect =
-          checkAnswerResponse.code !== 0 || (checkAnswerResponse.message as string)?.includes(questionId);
+
+        const isAnswerCorrect = !(checkAnswerResponse.message as string).includes('incorrect');
         console.log(`🪙 Is answer correct: `, isAnswerCorrect);
 
         const answerDocument: Document = {
