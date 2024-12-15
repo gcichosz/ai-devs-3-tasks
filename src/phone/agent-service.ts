@@ -24,7 +24,7 @@ export class AgentService {
       conversations: conversations
         .map((c) => `<conversation name="${c.metadata.name}">${c.text}</conversation>`)
         .join('\n'),
-      previous_answers: verifiedAnswers.map((c) => c.text).join('\n'),
+      previous_answers: verifiedAnswers.length ? verifiedAnswers.map((a) => a.text).join('\n') : 'No answers yet.',
     });
 
     const plan = (await this.openaiService.completionFull(
@@ -51,7 +51,7 @@ export class AgentService {
         .map((c) => `<conversation name="${c.metadata.name}">${c.text}</conversation>`)
         .join('\n'),
       thoughts,
-      previous_answers: verifiedAnswers.map((c) => c.text).join('\n'),
+      previous_answers: verifiedAnswers.length ? verifiedAnswers.map((a) => a.text).join('\n') : 'No answers yet.',
     });
 
     const answer = await this.openaiService.completionFull([answerPromptMessage as never, ...messages], 'gpt-4o');
