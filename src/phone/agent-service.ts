@@ -10,7 +10,13 @@ export class AgentService {
     private readonly langfuseService: LangfuseService,
   ) {}
 
-  async plan(messages: ChatCompletionMessageParam[], tools: Tool[], facts: Document[], conversations: Document[]) {
+  async plan(
+    messages: ChatCompletionMessageParam[],
+    tools: Tool[],
+    facts: Document[],
+    conversations: Document[],
+    verifiedAnswers: Document[],
+  ) {
     const planPrompt = await this.langfuseService.getPrompt('phone-plan');
     const [planPromptMessage] = planPrompt.compile({
       tools: tools.map((tool) => `<tool>${tool.name}: ${tool.description}</tool>`).join('\n'),
@@ -18,6 +24,7 @@ export class AgentService {
       conversations: conversations
         .map((c) => `<conversation name="${c.metadata.name}">${c.text}</conversation>`)
         .join('\n'),
+      previous_answers: verifiedAnswers.map((c) => c.text).join('\n'),
     });
 
     const plan = (await this.openaiService.completionFull(
@@ -35,6 +42,7 @@ export class AgentService {
     facts: Document[],
     conversations: Document[],
     thoughts: string,
+    verifiedAnswers: Document[],
   ) {
     const answerPrompt = await this.langfuseService.getPrompt('phone-answer');
     const [answerPromptMessage] = answerPrompt.compile({
@@ -43,6 +51,7 @@ export class AgentService {
         .map((c) => `<conversation name="${c.metadata.name}">${c.text}</conversation>`)
         .join('\n'),
       thoughts,
+      previous_answers: verifiedAnswers.map((c) => c.text).join('\n'),
     });
 
     const answer = await this.openaiService.completionFull([answerPromptMessage as never, ...messages], 'gpt-4o');

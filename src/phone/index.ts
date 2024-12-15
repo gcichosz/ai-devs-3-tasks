@@ -142,6 +142,8 @@ const main = async () => {
         parameters: JSON.stringify({}),
       },
     ],
+    // TODO: Answers cache
+    documents: [],
     config: {
       max_steps: 5,
       current_step: 0,
@@ -158,6 +160,7 @@ const main = async () => {
         state.tools,
         facts,
         conversations,
+        state.documents,
       );
       console.log('➡️ Next move:', nextMove);
       if (!nextMove.tool) {
@@ -170,6 +173,7 @@ const main = async () => {
           facts,
           conversations,
           nextMove.query,
+          state.documents,
         );
         console.log(`💡 Final answer: `, finalAnswer);
         const checkAnswerResponse = await submitAnswers(
@@ -178,9 +182,18 @@ const main = async () => {
           sendRequestSkill,
         );
         console.log(`👀 Check answer: `, checkAnswerResponse);
-        // TODO: Handle wrong answer (add it to context)
-        // TODO: Handle correct answer (add it to context)
-        break;
+        const isAnswerCorrect =
+          checkAnswerResponse.code !== 0 || (checkAnswerResponse.message as string)?.includes(questionId);
+        console.log(`🪙 Is answer correct: `, isAnswerCorrect);
+        const answerDocument: Document = {
+          uuid: uuid(),
+          text: `${isAnswerCorrect ? 'Correct' : 'Incorrect'} answer to question "${question}": ${finalAnswer.answer}`,
+          metadata: {},
+        };
+        state.documents.push(answerDocument);
+        if (isAnswerCorrect) {
+          break;
+        }
       }
     }
     break;

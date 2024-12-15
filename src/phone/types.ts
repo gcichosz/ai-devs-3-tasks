@@ -6,6 +6,7 @@ export type Document = {
 
 export type State = {
   tools: Tool[];
+  documents: Document[];
   config: {
     max_steps: number;
     current_step: number;
