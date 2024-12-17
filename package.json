@@ -35,7 +35,8 @@
     "softo": "bun run src/softo/index.ts",
     "webhook": "bun run src/webhook/index.ts",
     "notes": "bun run src/notes/index.ts",
-    "phone": "bun run src/phone/index.ts"
+    "phone": "bun run src/phone/index.ts",
+    "gps": "bun run src/gps/index.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
