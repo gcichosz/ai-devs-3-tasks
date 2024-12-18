@@ -55,7 +55,6 @@ const main = async () => {
       },
     ]);
 
-    // TODO: Add final answer tool
     if (!nextMove.tool || nextMove.tool === 'final_answer') {
       break;
     }
@@ -64,7 +63,7 @@ const main = async () => {
     // TODO: Use the tool
   }
 
-  const finalAnswer = '...';
+  const finalAnswer = await agent.generateAnswer(state);
   console.log(`💡 Final answer: `, finalAnswer);
 
   // TODO: Remove information about Barbara

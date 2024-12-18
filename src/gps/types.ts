@@ -26,6 +26,11 @@ export interface Action {
   tool_uuid: string;
 }
 
+export interface Step {
+  name: string;
+  query: string;
+}
+
 export type State = {
   tools: Tool[];
   documents: Document[];
@@ -34,5 +39,6 @@ export type State = {
   config: {
     max_steps: number;
     current_step: number;
+    active_step?: Step | null;
   };
 };

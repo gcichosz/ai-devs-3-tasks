@@ -2,7 +2,7 @@ import { ChatCompletionMessageParam } from 'openai/resources/chat/completions.mj
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { LangfuseService } from '../utils/langfuse/langfuse-service';
-import { State } from './types';
+import { Document, State } from './types';
 
 export class AgentService {
   constructor(
@@ -79,4 +79,64 @@ If you have sufficient information to provide a final answer or need user input,
     const result = JSON.parse(response.choices[0].message.content ?? '{}');
     return result?.tool ? result : null;
   }
+
+  async generateAnswer(state: State) {
+    const context = state.actions.flatMap((action) => action.results);
+    const query = state.config.active_step?.query;
+
+    const answer = await this.openAIService.completionFull(
+      [
+        {
+          role: 'system',
+          content: this.answerPrompt({ context, query }),
+        },
+        ...state.messages,
+      ],
+      'gpt-4o',
+    );
+
+    return answer.choices[0].message.content;
+  }
+
+  private answerPrompt = ({ context, query }: { context: Document[]; query: string | undefined }) => `
+From now on, you are an advanced AI assistant with access to results of various tools and processes. Speak using fewest words possible. Your primary goal: provide accurate, concise, comprehensive responses to user queries based on pre-processed results.
+
+<prompt_objective>
+Utilize available documents and uploads (results of previously executed actions) to deliver precise, relevant answers or inform user about limitations/inability to complete requested task.
+</prompt_objective>
+
+<prompt_rules>
+- ANSWER truthfully, using information from <documents> section. When you don't know the answer, say so.
+- ALWAYS assume requested actions have been performed
+- UTILIZE information in <documents> section as action results
+- REFERENCE documents using their links
+- NEVER invent information not in available documents
+- INFORM user if requested information unavailable
+- USE fewest words possible while maintaining clarity/completeness
+- Be AWARE your role is interpreting/presenting results, not performing actions
+</prompt_rules>
+
+<documents>
+${this.convertToXmlDocuments(context)}
+</documents>
+
+Remember: interpret/present results of performed actions. Use available documents for accurate, relevant information.
+
+*thinking* I was thinking about "${query}". It may be useful to consider this when answering.
+`;
+
+  private convertToXmlDocuments = (context: Document[]): string => {
+    if (context.length === 0) {
+      return 'no documents available';
+    }
+    return context
+      .map(
+        (doc) => `
+<document name="${doc.metadata.name || 'Unknown'}" uuid="${doc.uuid || 'Unknown'}">
+${doc.text}
+</document>
+`,
+      )
+      .join('\n');
+  };
 }
