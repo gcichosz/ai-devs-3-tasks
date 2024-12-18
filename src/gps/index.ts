@@ -1,14 +1,10 @@
-// TODO: Create main agent loop skeleton
-// TODO: Add initial plan 'tool'
-// TODO: Add select next step 'tool'
-// TODO: Add final answer tool
-// TODO: Add query DB tool (get user id)
-// TODO: Add call API tool (get location users)
-// TODO: Add check user coordinates tool
-// TODO: Remove information about Barbara
-// TODO: Report result
+import { v4 as uuid } from 'uuid';
 
+import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
+import { LangfuseService } from '../utils/langfuse/langfuse-service';
+import { AgentService } from './agent-service';
+import { State } from './types';
 
 const fetchInputData = async (sendRequestSkill: SendRequestSkill): Promise<{ question: string }> => {
   const response = await sendRequestSkill.getRequest(
@@ -19,9 +15,64 @@ const fetchInputData = async (sendRequestSkill: SendRequestSkill): Promise<{ que
 
 const main = async () => {
   const sendRequestSkill = new SendRequestSkill();
+  const openAIService = new OpenAISkill(process.env.OPENAI_API_KEY);
+  const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY, process.env.LANGFUSE_SECRET_KEY);
+  const agent = new AgentService(openAIService, langfuseService);
+  console.log(agent);
 
   const inputData = await fetchInputData(sendRequestSkill);
   console.log('Input data:', inputData);
+
+  const state: State = {
+    tools: [
+      {
+        uuid: uuid(),
+        name: 'final_answer',
+        description: 'Use this tool to write a message to the user',
+        instruction: '...',
+        parameters: JSON.stringify({}),
+      },
+    ],
+    documents: [],
+    config: {
+      max_steps: 5,
+      current_step: 0,
+    },
+  };
+
+  // TODO: Add query DB tool (get user id)
+  // TODO: Add call API tool (get location users)
+  // TODO: Add check user coordinates tool
+  for (; state.config.current_step < state.config.max_steps; state.config.current_step++) {
+    console.log(`🤔 Planning...`);
+    // TODO: Add select next step 'tool'
+    const nextMove = {
+      _thinking: '...',
+      tool: '...',
+      query: '...',
+    };
+    console.log('➡️ Next move:', nextMove._thinking);
+    console.table([
+      {
+        Tool: nextMove.tool,
+        Query: nextMove.query,
+      },
+    ]);
+
+    // TODO: Add final answer tool
+    if (!nextMove.tool || nextMove.tool === 'final_answer') {
+      break;
+    }
+
+    // TODO: Generate parameters for the tool
+    // TODO: Use the tool
+  }
+
+  const finalAnswer = '...';
+  console.log(`💡 Final answer: `, finalAnswer);
+
+  // TODO: Remove information about Barbara
+  // TODO: Report result
 };
 
 main();
