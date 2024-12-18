@@ -1,17 +1,4 @@
-export type Document = {
-  uuid: string;
-  text: string;
-  metadata: Record<string, unknown>;
-};
-
-export type State = {
-  tools: Tool[];
-  documents: Document[];
-  config: {
-    max_steps: number;
-    current_step: number;
-  };
-};
+import { ChatCompletionMessageParam } from 'openai/resources/chat/completions.mjs';
 
 export interface Tool {
   uuid: string;
@@ -20,3 +7,32 @@ export interface Tool {
   instruction: string;
   parameters: string;
 }
+
+export type Document = {
+  uuid: string;
+  text: string;
+  metadata: {
+    name: string;
+    urls: string[];
+  };
+};
+
+export interface Action {
+  uuid: string;
+  name: string;
+  parameters: string;
+  description: string;
+  results: Document[];
+  tool_uuid: string;
+}
+
+export type State = {
+  tools: Tool[];
+  documents: Document[];
+  messages: ChatCompletionMessageParam[];
+  actions: Action[];
+  config: {
+    max_steps: number;
+    current_step: number;
+  };
+};

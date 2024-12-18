@@ -18,7 +18,6 @@ const main = async () => {
   const openAIService = new OpenAISkill(process.env.OPENAI_API_KEY);
   const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY, process.env.LANGFUSE_SECRET_KEY);
   const agent = new AgentService(openAIService, langfuseService);
-  console.log(agent);
 
   const inputData = await fetchInputData(sendRequestSkill);
   console.log('Input data:', inputData);
@@ -34,6 +33,8 @@ const main = async () => {
       },
     ],
     documents: [],
+    messages: [{ role: 'user', content: inputData.question }],
+    actions: [],
     config: {
       max_steps: 5,
       current_step: 0,
@@ -45,12 +46,7 @@ const main = async () => {
   // TODO: Add check user coordinates tool
   for (; state.config.current_step < state.config.max_steps; state.config.current_step++) {
     console.log(`🤔 Planning...`);
-    // TODO: Add select next step 'tool'
-    const nextMove = {
-      _thinking: '...',
-      tool: '...',
-      query: '...',
-    };
+    const nextMove = await agent.plan(state);
     console.log('➡️ Next move:', nextMove._thinking);
     console.table([
       {
