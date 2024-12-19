@@ -13,7 +13,6 @@ export type Document = {
   text: string;
   metadata: {
     name: string;
-    urls: string[];
   };
 };
 

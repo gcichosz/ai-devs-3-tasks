@@ -37,7 +37,7 @@ Determine the single most effective next action based on the current context, us
                   ? `${a.results
                       .map(
                         (r) => `
-                      <result name="${r.metadata.name}" url="${r.metadata?.urls?.[0] || 'no-url'}" >
+                      <result name="${r.metadata.name}">
                         ${r.text}
                       </result>
                     `,

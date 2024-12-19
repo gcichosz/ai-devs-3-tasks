@@ -1,14 +1,15 @@
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions.mjs';
+import { v4 as uuid } from 'uuid';
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
-import { LangfuseService } from '../utils/langfuse/langfuse-service';
 import { answerPrompt, describeToolPrompt, planPrompt } from './agent-prompts';
-import { State } from './types';
+import { ScanLocationService } from './scan-location-service';
+import { Action, State } from './types';
 
 export class AgentService {
   constructor(
     private readonly openAIService: OpenAISkill,
-    private readonly langfuseService: LangfuseService,
+    private readonly scanLocationService: ScanLocationService,
   ) {}
 
   async plan(state: State) {
@@ -54,5 +55,22 @@ export class AgentService {
 
     const response = await this.openAIService.completionFull([systemMessage], 'gpt-4o', true);
     return JSON.parse(response.choices[0].message.content ?? '{}');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async useTool(tool: string, parameters: any): Promise<Action | null> {
+    if (tool === 'scan_location') {
+      const result = await this.scanLocationService.scan(parameters.query);
+      return {
+        uuid: uuid(),
+        name: tool,
+        parameters: JSON.stringify(parameters),
+        description: 'Location scan results for the query ' + parameters.query,
+        results: [result],
+        tool_uuid: tool,
+      };
+    }
+
+    return null;
   }
 }
