@@ -14,7 +14,6 @@ export class ScanLocationService {
     });
 
     console.log('🌍 Scan location response:', response);
-
     return {
       uuid: uuid(),
       text: response.message as string,

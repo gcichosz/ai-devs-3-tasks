@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { AgentService } from './agent-service';
+import { IdentifyPeopleService } from './identify-people-service';
 import { ScanLocationService } from './scan-location-service';
 import { State } from './types';
 
@@ -17,7 +18,8 @@ const main = async () => {
   const sendRequestSkill = new SendRequestSkill();
   const openAIService = new OpenAISkill(process.env.OPENAI_API_KEY);
   const scanLocationService = new ScanLocationService(sendRequestSkill);
-  const agent = new AgentService(openAIService, scanLocationService);
+  const identifyPeopleService = new IdentifyPeopleService(sendRequestSkill);
+  const agent = new AgentService(openAIService, scanLocationService, identifyPeopleService);
 
   const inputData = await fetchInputData(sendRequestSkill);
   console.log('Input data:', inputData);
@@ -28,15 +30,19 @@ const main = async () => {
         uuid: uuid(),
         name: 'final_answer',
         description: 'Use this tool to write a message to the user',
-        instruction: '...',
         parameters: JSON.stringify({}),
       },
       {
         uuid: uuid(),
         name: 'scan_location',
         description: 'Use this tool to scan a location for people',
-        instruction: '...',
         parameters: JSON.stringify({ query: 'name of the location to scan' }),
+      },
+      {
+        uuid: uuid(),
+        name: 'identify_people',
+        description: 'Use this tool find people ids',
+        parameters: JSON.stringify({ query: 'an array of people names' }),
       },
     ],
     documents: [],
@@ -48,7 +54,6 @@ const main = async () => {
     },
   };
 
-  // TODO: Add query DB tool (get user id)
   // TODO: Add check user coordinates tool
   for (; state.config.current_step < state.config.max_steps; state.config.current_step++) {
     console.log(`🤔 Planning...`);

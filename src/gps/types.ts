@@ -4,7 +4,6 @@ export interface Tool {
   uuid: string;
   name: string;
   description: string;
-  instruction: string;
   parameters: string;
 }
 
