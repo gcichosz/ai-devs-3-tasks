@@ -2,7 +2,7 @@ import { ChatCompletionMessageParam } from 'openai/resources/chat/completions.mj
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { LangfuseService } from '../utils/langfuse/langfuse-service';
-import { answerPrompt, planPrompt } from './agent-prompts';
+import { answerPrompt, describeToolPrompt, planPrompt } from './agent-prompts';
 import { State } from './types';
 
 export class AgentService {
@@ -27,7 +27,7 @@ export class AgentService {
     const context = state.actions.flatMap((action) => action.results);
     const query = state.config.active_step?.query;
 
-    const answer = await this.openAIService.completionFull(
+    const response = await this.openAIService.completionFull(
       [
         {
           role: 'system',
@@ -38,6 +38,21 @@ export class AgentService {
       'gpt-4o',
     );
 
-    return answer.choices[0].message.content;
+    return response.choices[0].message.content;
+  }
+
+  async describeTool(state: State, tool: string, query: string) {
+    const toolInfo = state.tools.find((t) => t.name === tool);
+    if (!toolInfo) {
+      throw new Error(`Tool ${tool} not found`);
+    }
+
+    const systemMessage: ChatCompletionMessageParam = {
+      role: 'system',
+      content: describeToolPrompt(state, toolInfo, query),
+    };
+
+    const response = await this.openAIService.completionFull([systemMessage], 'gpt-4o', true);
+    return JSON.parse(response.choices[0].message.content ?? '{}');
   }
 }

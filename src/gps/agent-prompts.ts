@@ -1,4 +1,4 @@
-import { Document, State } from './types';
+import { Document, State, Tool } from './types';
 
 export const planPrompt = (
   state: State,
@@ -88,6 +88,24 @@ Remember: interpret/present results of performed actions. Use available document
 
 *thinking* I was thinking about "${query}". It may be useful to consider this when answering.
 `;
+
+export const describeToolPrompt = (
+  state: State,
+  tool: Tool,
+  query: string,
+): string => `Generate specific parameters for the "${tool.name}" tool.
+
+<context>
+Tool description: ${tool.description}
+Required parameters: ${tool.parameters}
+Original query: ${query}
+Last message: "${state.messages[state.messages.length - 1]?.content || 'No messages yet'}"
+Previous actions: ${state.actions.map((a) => `${a.name}: ${a.parameters}`).join(', ')}
+</context>
+
+Respond with ONLY a JSON object matching the tool's parameter structure.
+Example for scan_location: {"query": "KRAKOW"}
+Example for final_answer: {"answer": "detailed response"}`;
 
 const convertToXmlDocuments = (context: Document[]): string => {
   if (context.length === 0) {

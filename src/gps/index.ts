@@ -31,6 +31,13 @@ const main = async () => {
         instruction: '...',
         parameters: JSON.stringify({}),
       },
+      {
+        uuid: uuid(),
+        name: 'scan_location',
+        description: 'Use this tool to scan a location for people',
+        instruction: '...',
+        parameters: JSON.stringify({ query: 'name of the location to scan' }),
+      },
     ],
     documents: [],
     messages: [{ role: 'user', content: inputData.question }],
@@ -41,8 +48,8 @@ const main = async () => {
     },
   };
 
-  // TODO: Add query DB tool (get user id)
   // TODO: Add call API tool (get location users)
+  // TODO: Add query DB tool (get user id)
   // TODO: Add check user coordinates tool
   for (; state.config.current_step < state.config.max_steps; state.config.current_step++) {
     console.log(`🤔 Planning...`);
@@ -59,7 +66,10 @@ const main = async () => {
       break;
     }
 
+    state.config.active_step = { name: nextMove.tool, query: nextMove.query };
     // TODO: Generate parameters for the tool
+    const parameters = await agent.describeTool(state, nextMove.tool, nextMove.query);
+    console.log('🔍 Tool parameters:', parameters);
     // TODO: Use the tool
   }
 
