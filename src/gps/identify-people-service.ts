@@ -20,7 +20,7 @@ export class IdentifyPeopleService {
       uuid: uuid(),
       text: `${user.username} id is ${user.id}`,
       metadata: {
-        name: `identify_people for ${user.username}`,
+        name: `translate_names_to_ids for ${user.username}`,
       },
     }));
   }

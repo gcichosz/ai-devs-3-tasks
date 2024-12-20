@@ -25,7 +25,9 @@ Determine the single most effective next action based on the current context, us
 
 <context>
     <last_message>Last message: "${state.messages[state.messages.length - 1]?.content || 'No messages yet'}"</last_message>
-    <available_tools>Available tools: ${state.tools.map((t) => t.name).join(', ') || 'No tools available'}</available_tools>
+    <available_tools>
+      ${state.tools.map((t) => `<tool name="${t.name}">${t.description}</tool>`).join('\n') || 'No tools available'}
+    </available_tools>
     <actions_taken>Actions taken: ${
       state.actions.length
         ? state.actions
@@ -105,6 +107,8 @@ Previous actions: ${state.actions.map((a) => `${a.name}: ${a.parameters}`).join(
 
 Respond with ONLY a JSON object matching the tool's parameter structure.
 Example for scan_location: {"query": "KRAKOW"}
+Example for translate_names_to_ids: {"query": ["DOMINIK", "GRZESIEK"]}
+Example for get_coordinates: {"query": [42, 27]}
 Example for final_answer: {"answer": "detailed response"}`;
 
 const convertToXmlDocuments = (context: Document[]): string => {

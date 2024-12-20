@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid';
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { answerPrompt, describeToolPrompt, planPrompt } from './agent-prompts';
 import { IdentifyPeopleService } from './identify-people-service';
+import { LocatePeopleService } from './locate-people-service';
 import { ScanLocationService } from './scan-location-service';
 import { Action, State } from './types';
 
@@ -12,6 +13,7 @@ export class AgentService {
     private readonly openAIService: OpenAISkill,
     private readonly scanLocationService: ScanLocationService,
     private readonly identifyPeopleService: IdentifyPeopleService,
+    private readonly locatePeopleService: LocatePeopleService,
   ) {}
 
   async plan(state: State) {
@@ -73,13 +75,25 @@ export class AgentService {
       };
     }
 
-    if (tool === 'identify_people') {
+    if (tool === 'translate_names_to_ids') {
       const result = await this.identifyPeopleService.identify(parameters.query);
       return {
         uuid: uuid(),
         name: tool,
         parameters: JSON.stringify(parameters),
         description: 'People identification results for the query ' + parameters.query,
+        results: result,
+        tool_uuid: tool,
+      };
+    }
+
+    if (tool === 'get_coordinates') {
+      const result = await this.locatePeopleService.locate(parameters.query);
+      return {
+        uuid: uuid(),
+        name: tool,
+        parameters: JSON.stringify(parameters),
+        description: 'People location results for the query ' + parameters.query,
         results: result,
         tool_uuid: tool,
       };

@@ -4,6 +4,7 @@ import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { AgentService } from './agent-service';
 import { IdentifyPeopleService } from './identify-people-service';
+import { LocatePeopleService } from './locate-people-service';
 import { ScanLocationService } from './scan-location-service';
 import { State } from './types';
 
@@ -19,7 +20,8 @@ const main = async () => {
   const openAIService = new OpenAISkill(process.env.OPENAI_API_KEY);
   const scanLocationService = new ScanLocationService(sendRequestSkill);
   const identifyPeopleService = new IdentifyPeopleService(sendRequestSkill);
-  const agent = new AgentService(openAIService, scanLocationService, identifyPeopleService);
+  const locatePeopleService = new LocatePeopleService(sendRequestSkill);
+  const agent = new AgentService(openAIService, scanLocationService, identifyPeopleService, locatePeopleService);
 
   const inputData = await fetchInputData(sendRequestSkill);
   console.log('Input data:', inputData);
@@ -35,26 +37,31 @@ const main = async () => {
       {
         uuid: uuid(),
         name: 'scan_location',
-        description: 'Use this tool to scan a location for people',
+        description: 'Use this tool to check people in a location (input example: "KRAKOW")',
         parameters: JSON.stringify({ query: 'name of the location to scan' }),
       },
       {
         uuid: uuid(),
-        name: 'identify_people',
-        description: 'Use this tool find people ids',
+        name: 'translate_names_to_ids',
+        description: 'Use this tool translate people names to their ids (input example: ["GRZESIEK", "DOMINIK"])',
         parameters: JSON.stringify({ query: 'an array of people names' }),
+      },
+      {
+        uuid: uuid(),
+        name: 'get_coordinates',
+        description: 'Use this tool to get people coordinates by their ids (input example: [42, 27])',
+        parameters: JSON.stringify({ query: 'an array of people ids' }),
       },
     ],
     documents: [],
     messages: [{ role: 'user', content: inputData.question }],
     actions: [],
     config: {
-      max_steps: 5,
+      max_steps: 7,
       current_step: 0,
     },
   };
 
-  // TODO: Add check user coordinates tool
   for (; state.config.current_step < state.config.max_steps; state.config.current_step++) {
     console.log(`🤔 Planning...`);
     const nextMove = await agent.plan(state);
