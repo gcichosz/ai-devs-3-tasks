@@ -89,8 +89,15 @@ const main = async () => {
   const finalAnswer = await agent.generateAnswer(state);
   console.log(`💡 Final answer: `, finalAnswer);
 
-  // TODO: Remove information about Barbara
-  // TODO: Report result
+  const answer = await agent.translateAnswer(finalAnswer || '');
+  console.log(`💡 Report answer: `, answer);
+
+  const result = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'gps',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer: answer,
+  });
+  console.log('🏆 Report response:', result);
 };
 
 main();

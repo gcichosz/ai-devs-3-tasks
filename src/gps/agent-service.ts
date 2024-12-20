@@ -2,7 +2,7 @@ import { ChatCompletionMessageParam } from 'openai/resources/chat/completions.mj
 import { v4 as uuid } from 'uuid';
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
-import { answerPrompt, describeToolPrompt, planPrompt } from './agent-prompts';
+import { answerPrompt, describeToolPrompt, planPrompt, translateAnswerPrompt } from './agent-prompts';
 import { IdentifyPeopleService } from './identify-people-service';
 import { LocatePeopleService } from './locate-people-service';
 import { ScanLocationService } from './scan-location-service';
@@ -100,5 +100,19 @@ export class AgentService {
     }
 
     return null;
+  }
+
+  async translateAnswer(answer: string) {
+    const systemMessage: ChatCompletionMessageParam = {
+      role: 'system',
+      content: translateAnswerPrompt(),
+    };
+
+    const response = await this.openAIService.completionFull(
+      [systemMessage, { role: 'user', content: answer }],
+      'gpt-4o',
+      true,
+    );
+    return JSON.parse(response.choices[0].message.content ?? '{}');
   }
 }

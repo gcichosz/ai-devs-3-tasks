@@ -111,6 +111,43 @@ Example for translate_names_to_ids: {"query": ["DOMINIK", "GRZESIEK"]}
 Example for get_coordinates: {"query": [42, 27]}
 Example for final_answer: {"answer": "detailed response"}`;
 
+export const translateAnswerPrompt = () => `
+You are a specialized JSON formatter. Your task is to convert human-readable text about people's locations into a structured JSON format.
+
+<rules>
+- Extract person names and their coordinates from the input text
+- Format as a JSON object with person names as keys
+- Each person object should have lat and lon number properties
+- Remove any unnecessary text/details
+- Maintain numerical precision of coordinates
+- Skip entries with missing/invalid coordinates
+</rules>
+
+<format_specification>
+{
+  "person_name": {
+    "lat": number, // latitude coordinate
+    "lon": number  // longitude coordinate
+  }
+}
+</format_specification>
+
+<examples>
+Input: "John is at coordinates 52.23, 21.01 and Mary is located at 40.71, -74.01"
+Output: {
+  "John": {
+    "lat": 52.23,
+    "lon": 21.01
+  },
+  "Mary": {
+    "lat": 40.71,
+    "lon": -74.01
+  }
+}
+</examples>
+
+Respond with ONLY the properly formatted JSON object. Do not include any additional text or explanations.`;
+
 const convertToXmlDocuments = (context: Document[]): string => {
   if (context.length === 0) {
     return 'no documents available';
