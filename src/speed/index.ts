@@ -1,9 +1,6 @@
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
+import { ScrapeWebSkill } from '../skills/scrape-web/scrape-web-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
-
-// TODO: Step 3 - Create function to fetch and process challenge URLs in parallel
-//       - Process according to task instructions
-//       - Return results in Polish
 
 // TODO: Step 4 - Create function to combine results from both challenges
 
@@ -18,6 +15,12 @@ import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 //         }
 
 const mainEndpoint = 'https://rafal.ag3nts.org/b46c3';
+const contextUrl = 'https://centrala.ag3nts.org/dane/arxiv-draft.html';
+
+const getContext = async (scrapeWebSkill: ScrapeWebSkill) => {
+  const scrapedContext = await scrapeWebSkill.scrapeUrl(contextUrl);
+  return scrapedContext.markdown;
+};
 
 const getHash = async (sendRequestSkill: SendRequestSkill): Promise<string> => {
   const response = await sendRequestSkill.postRequest(mainEndpoint, {
@@ -60,12 +63,28 @@ const solveCommonKnowledgeChallenge = async (data: string[], openaiSkill: OpenAI
   return await Promise.all(data.map(async (question: string) => answerFromCommonKnowledge(question, openaiSkill)));
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const solveContextChallenge = (_data: string[], _openaiSkill: OpenAISkill) => {
-  return '';
+const answerFromContext = async (question: string, openaiSkill: OpenAISkill, context: string) => {
+  const response = await openaiSkill.completionFull([
+    {
+      role: 'system',
+      content: `Context:\n${context}\n\nAnswer the question in Polish as fast and concise as possible.`,
+    },
+    { role: 'user', content: question },
+  ]);
+  console.log(`💡 Answer: ${question} -> ${response.choices[0].message.content}`);
+  return response.choices[0].message.content;
 };
 
-const solveChallenge = async (sendRequestSkill: SendRequestSkill, openaiSkill: OpenAISkill, challengeUrl: string) => {
+const solveContextChallenge = async (data: string[], openaiSkill: OpenAISkill, context: string) => {
+  return await Promise.all(data.map(async (question: string) => answerFromContext(question, openaiSkill, context)));
+};
+
+const solveChallenge = async (
+  sendRequestSkill: SendRequestSkill,
+  openaiSkill: OpenAISkill,
+  challengeUrl: string,
+  context: string,
+) => {
   const response = await sendRequestSkill.getRequest(challengeUrl);
   console.log(`📝 Challenge response for ${challengeUrl}:`, response);
   const { data, task } = response as { data: string[]; task: string };
@@ -74,7 +93,7 @@ const solveChallenge = async (sendRequestSkill: SendRequestSkill, openaiSkill: O
     case 'Odpowiedz na pytania':
       return solveCommonKnowledgeChallenge(data, openaiSkill);
     case 'Źródło wiedzy https://centrala.ag3nts.org/dane/arxiv-draft.html':
-      return solveContextChallenge(data, openaiSkill);
+      return solveContextChallenge(data, openaiSkill, context);
     default:
       return '';
   }
@@ -83,6 +102,14 @@ const solveChallenge = async (sendRequestSkill: SendRequestSkill, openaiSkill: O
 const main = async () => {
   const sendRequestSkill = new SendRequestSkill();
   const openaiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
+  const scrapeWebSkill = new ScrapeWebSkill(process.env.FIRECRAWL_API_KEY, [
+    {
+      name: 'arxiv',
+      url: 'https://centrala.ag3nts.org',
+    },
+  ]);
+
+  const context = await getContext(scrapeWebSkill);
 
   const hash = await getHash(sendRequestSkill);
   console.log('#️⃣ Hash:', hash);
@@ -93,7 +120,7 @@ const main = async () => {
   console.log('🔗 Challenge URLs:', challenges);
 
   await Promise.all(
-    challenges.map(async (challengeUrl) => solveChallenge(sendRequestSkill, openaiSkill, challengeUrl)),
+    challenges.map(async (challengeUrl) => solveChallenge(sendRequestSkill, openaiSkill, challengeUrl, context)),
   );
 
   console.log('⏱️ Duration:', (Date.now() - timestamp * 1000) / 1000);
