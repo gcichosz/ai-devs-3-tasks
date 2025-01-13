@@ -2,18 +2,6 @@ import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { ScrapeWebSkill } from '../skills/scrape-web/scrape-web-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 
-// TODO: Step 4 - Create function to combine results from both challenges
-
-// TODO: Step 5 - Create main function that:
-//       - Solves challenges
-//       - Sends final response with:
-//         {
-//           apikey: string,
-//           timestamp: number,
-//           signature: string,
-//           answer: string | any
-//         }
-
 const mainEndpoint = 'https://rafal.ag3nts.org/b46c3';
 const contextUrl = 'https://centrala.ag3nts.org/dane/arxiv-draft.html';
 
@@ -47,7 +35,7 @@ const getChallengeDetails = async (sendRequestSkill: SendRequestSkill, hash: str
   };
 };
 
-const answerFromCommonKnowledge = async (question: string, openaiSkill: OpenAISkill) => {
+const answerFromCommonKnowledge = async (question: string, openaiSkill: OpenAISkill): Promise<string> => {
   const response = await openaiSkill.completionFull([
     {
       role: 'system',
@@ -56,14 +44,14 @@ const answerFromCommonKnowledge = async (question: string, openaiSkill: OpenAISk
     { role: 'user', content: question },
   ]);
   console.log(`💡 Answer: ${question} -> ${response.choices[0].message.content}`);
-  return response.choices[0].message.content;
+  return response.choices[0].message.content!;
 };
 
-const solveCommonKnowledgeChallenge = async (data: string[], openaiSkill: OpenAISkill) => {
+const solveCommonKnowledgeChallenge = async (data: string[], openaiSkill: OpenAISkill): Promise<string[]> => {
   return await Promise.all(data.map(async (question: string) => answerFromCommonKnowledge(question, openaiSkill)));
 };
 
-const answerFromContext = async (question: string, openaiSkill: OpenAISkill, context: string) => {
+const answerFromContext = async (question: string, openaiSkill: OpenAISkill, context: string): Promise<string> => {
   const response = await openaiSkill.completionFull([
     {
       role: 'system',
@@ -72,10 +60,10 @@ const answerFromContext = async (question: string, openaiSkill: OpenAISkill, con
     { role: 'user', content: question },
   ]);
   console.log(`💡 Answer: ${question} -> ${response.choices[0].message.content}`);
-  return response.choices[0].message.content;
+  return response.choices[0].message.content!;
 };
 
-const solveContextChallenge = async (data: string[], openaiSkill: OpenAISkill, context: string) => {
+const solveContextChallenge = async (data: string[], openaiSkill: OpenAISkill, context: string): Promise<string[]> => {
   return await Promise.all(data.map(async (question: string) => answerFromContext(question, openaiSkill, context)));
 };
 
@@ -84,7 +72,7 @@ const solveChallenge = async (
   openaiSkill: OpenAISkill,
   challengeUrl: string,
   context: string,
-) => {
+): Promise<string[]> => {
   const response = await sendRequestSkill.getRequest(challengeUrl);
   console.log(`📝 Challenge response for ${challengeUrl}:`, response);
   const { data, task } = response as { data: string[]; task: string };
@@ -95,7 +83,7 @@ const solveChallenge = async (
     case 'Źródło wiedzy https://centrala.ag3nts.org/dane/arxiv-draft.html':
       return solveContextChallenge(data, openaiSkill, context);
     default:
-      return '';
+      return [];
   }
 };
 
@@ -119,11 +107,21 @@ const main = async () => {
   console.log('🔑 Signature:', signature);
   console.log('🔗 Challenge URLs:', challenges);
 
-  await Promise.all(
+  const answers = await Promise.all(
     challenges.map(async (challengeUrl) => solveChallenge(sendRequestSkill, openaiSkill, challengeUrl, context)),
   );
-
+  const finalAnswer = answers.flat();
+  console.log('🔑 Answers:', finalAnswer);
   console.log('⏱️ Duration:', (Date.now() - timestamp * 1000) / 1000);
+
+  const response = await sendRequestSkill.postRequest(mainEndpoint, {
+    apikey: process.env.AI_DEVS_API_KEY,
+    timestamp,
+    signature,
+    answer: finalAnswer,
+  });
+
+  console.log('🏆 Report response:', response);
 };
 
 main();
