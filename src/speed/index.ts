@@ -1,8 +1,7 @@
+import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 
 // TODO: Step 3 - Create function to fetch and process challenge URLs in parallel
-//       - Fetch both URLs simultaneously
-//       - Extract "data" and "task" fields
 //       - Process according to task instructions
 //       - Return results in Polish
 
@@ -45,8 +44,45 @@ const getChallengeDetails = async (sendRequestSkill: SendRequestSkill, hash: str
   };
 };
 
+const answerFromCommonKnowledge = async (question: string, openaiSkill: OpenAISkill) => {
+  const response = await openaiSkill.completionFull([
+    {
+      role: 'system',
+      content: 'You are a helpful assistant. Answer the question in Polish as fast and concise as possible.',
+    },
+    { role: 'user', content: question },
+  ]);
+  console.log(`💡 Answer: ${question} -> ${response.choices[0].message.content}`);
+  return response.choices[0].message.content;
+};
+
+const solveCommonKnowledgeChallenge = async (data: string[], openaiSkill: OpenAISkill) => {
+  return await Promise.all(data.map(async (question: string) => answerFromCommonKnowledge(question, openaiSkill)));
+};
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const solveContextChallenge = (_data: string[], _openaiSkill: OpenAISkill) => {
+  return '';
+};
+
+const solveChallenge = async (sendRequestSkill: SendRequestSkill, openaiSkill: OpenAISkill, challengeUrl: string) => {
+  const response = await sendRequestSkill.getRequest(challengeUrl);
+  console.log(`📝 Challenge response for ${challengeUrl}:`, response);
+  const { data, task } = response as { data: string[]; task: string };
+
+  switch (task) {
+    case 'Odpowiedz na pytania':
+      return solveCommonKnowledgeChallenge(data, openaiSkill);
+    case 'Źródło wiedzy https://centrala.ag3nts.org/dane/arxiv-draft.html':
+      return solveContextChallenge(data, openaiSkill);
+    default:
+      return '';
+  }
+};
+
 const main = async () => {
   const sendRequestSkill = new SendRequestSkill();
+  const openaiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
 
   const hash = await getHash(sendRequestSkill);
   console.log('#️⃣ Hash:', hash);
@@ -55,6 +91,12 @@ const main = async () => {
   console.log('🕒 Timestamp:', timestamp);
   console.log('🔑 Signature:', signature);
   console.log('🔗 Challenge URLs:', challenges);
+
+  await Promise.all(
+    challenges.map(async (challengeUrl) => solveChallenge(sendRequestSkill, openaiSkill, challengeUrl)),
+  );
+
+  console.log('⏱️ Duration:', (Date.now() - timestamp * 1000) / 1000);
 };
 
 main();
