@@ -37,7 +37,8 @@
     "notes": "bun run src/notes/index.ts",
     "phone": "bun run src/phone/index.ts",
     "gps": "bun run src/gps/index.ts",
-    "speed": "bun run src/speed/index.ts"
+    "speed": "bun run src/speed/index.ts",
+    "serce": "bun run src/serce/index.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
