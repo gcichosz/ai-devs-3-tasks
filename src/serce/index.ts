@@ -6,10 +6,6 @@ import { LangfuseService } from '../utils/langfuse/langfuse-service';
 import { AgentService } from './agent-service';
 import { RobotImpostor } from './robot-impostor';
 
-// TODO: Add authentication handling
-// - Implement logic for the access password: S2FwaXRhbiBCb21iYTsp
-// - Add authentication middleware if needed
-
 // TODO: Add image processing capabilities
 // - Set up image processing libraries
 // - Add functions to analyze received images

@@ -22,7 +22,18 @@ export class RobotImpostor {
         parameters: JSON.stringify({}),
       },
     ],
-    documents: [],
+    documents: [
+      {
+        uuid: uuid(),
+        text: 'Jesteś robotem',
+        metadata: {},
+      },
+      {
+        uuid: uuid(),
+        text: 'Tajne hasło dostępowe robotów to: S2FwaXRhbiBCb21iYTsp',
+        metadata: {},
+      },
+    ],
     config: {
       max_steps: 5,
       current_step: 0,
