@@ -1,6 +1,11 @@
 import express from 'express';
 import { Request, Response } from 'express';
 
+import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
+import { LangfuseService } from '../utils/langfuse/langfuse-service';
+import { AgentService } from './agent-service';
+import { RobotImpostor } from './robot-impostor';
+
 // TODO: Add authentication handling
 // - Implement logic for the access password: S2FwaXRhbiBCb21iYTsp
 // - Add authentication middleware if needed
@@ -24,12 +29,21 @@ import { Request, Response } from 'express';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const openAIService = new OpenAISkill(process.env.OPENAI_API_KEY);
+const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY, process.env.LANGFUSE_SECRET_KEY);
+const agentService = new AgentService(openAIService, langfuseService);
+const robotImpostor = new RobotImpostor(openAIService, langfuseService, agentService);
+
 app.use(express.json());
 
-app.post('/', (req: Request, res: Response) => {
-  // Initial basic response
+app.post('/', async (req: Request, res: Response) => {
+  console.log('🤖:');
+  console.log(req.body);
+
+  const answer = await robotImpostor.answer(req.body.question);
+
   res.status(200).json({
-    answer: 'Initial setup response',
+    answer,
   });
 });
 
