@@ -2,6 +2,8 @@ import express from 'express';
 import { Request, Response } from 'express';
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
+import { SendRequestSkill } from '../skills/send-request/send-request-skill';
+import { SpeechToTextSkill } from '../skills/speech-to-text/speech-to-text-skill';
 import { LangfuseService } from '../utils/langfuse/langfuse-service';
 import { AgentService } from './agent-service';
 import { RobotImpostor } from './robot-impostor';
@@ -9,10 +11,6 @@ import { RobotImpostor } from './robot-impostor';
 // TODO: Add image processing capabilities
 // - Set up image processing libraries
 // - Add functions to analyze received images
-
-// TODO: Add audio processing capabilities
-// - Set up audio processing libraries
-// - Add functions to analyze received audio files
 
 // TODO: Add GPT-4o-mini interaction handling
 // - Implement logic for when system asks for new instructions
@@ -24,7 +22,9 @@ const PORT = process.env.PORT || 3000;
 const openAIService = new OpenAISkill(process.env.OPENAI_API_KEY);
 const langfuseService = new LangfuseService(process.env.LANGFUSE_PUBLIC_KEY, process.env.LANGFUSE_SECRET_KEY);
 const agentService = new AgentService(openAIService, langfuseService);
-const robotImpostor = new RobotImpostor(openAIService, langfuseService, agentService);
+const sendRequestSkill = new SendRequestSkill();
+const speechToTextSkill = new SpeechToTextSkill(process.env.GROQ_API_KEY);
+const robotImpostor = new RobotImpostor(agentService, sendRequestSkill, speechToTextSkill);
 
 app.use(express.json());
 

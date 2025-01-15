@@ -1,15 +1,15 @@
 import { v4 as uuid } from 'uuid';
 
-import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
-import { LangfuseService } from '../utils/langfuse/langfuse-service';
+import { SendRequestSkill } from '../skills/send-request/send-request-skill';
+import { SpeechToTextSkill } from '../skills/speech-to-text/speech-to-text-skill';
 import { AgentService } from './agent-service';
 import { Action, Document, State } from './types';
 
 export class RobotImpostor {
   constructor(
-    private readonly openaiService: OpenAISkill,
-    private readonly langfuseService: LangfuseService,
     private readonly agentService: AgentService,
+    private readonly sendRequestSkill: SendRequestSkill,
+    private readonly speechToTextSkill: SpeechToTextSkill,
   ) {}
 
   private readonly state: State = {
@@ -29,6 +29,15 @@ export class RobotImpostor {
         parameters: JSON.stringify({
           text: 'The information to remember',
           metadata: 'Optional metadata about this information (JSON object)',
+        }),
+      },
+      {
+        uuid: uuid(),
+        name: 'transcribe',
+        description: 'Use this tool to download and transcribe audio files',
+        instruction: 'Use this tool to download and transcribe audio files',
+        parameters: JSON.stringify({
+          url: 'The URL of the audio file to download and transcribe',
         }),
       },
     ],
@@ -114,6 +123,33 @@ export class RobotImpostor {
 
         this.state.documents.push(newDocument);
         console.log(`🧠 Remembered: ${params.text}`);
+      }
+
+      if (nextMove.tool === 'transcribe') {
+        const params = typeof nextMove.query === 'string' ? JSON.parse(nextMove.query) : nextMove.query;
+        const audioBuffer = await this.sendRequestSkill.downloadFile(params.url);
+        const transcription = await this.speechToTextSkill.transcribe(audioBuffer);
+
+        const newDocument: Document = {
+          uuid: uuid(),
+          text: transcription,
+          metadata: { url: params.url },
+        };
+
+        const tool = this.state.tools.find((t) => t.name === 'transcribe')!;
+        const action: Action = {
+          uuid: tool.uuid,
+          name: tool.name,
+          parameters: nextMove.query,
+          description: tool.description,
+          results: [newDocument],
+          tool_uuid: tool.uuid,
+        };
+
+        this.state.actions.push(action);
+        this.state.documents.push(newDocument);
+
+        console.log(`🎤 Transcribed: ${transcription}`);
       }
     }
 
