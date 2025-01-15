@@ -1,5 +1,7 @@
 import { v4 as uuid } from 'uuid';
 
+import { ImageManipulationSkill } from '../skills/image-manipulation/image-manipulation-skill';
+import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { SpeechToTextSkill } from '../skills/speech-to-text/speech-to-text-skill';
 import { AgentService } from './agent-service';
@@ -10,6 +12,8 @@ export class RobotImpostor {
     private readonly agentService: AgentService,
     private readonly sendRequestSkill: SendRequestSkill,
     private readonly speechToTextSkill: SpeechToTextSkill,
+    private readonly openAiSkill: OpenAISkill,
+    private readonly imageManipulationSkill: ImageManipulationSkill,
   ) {}
 
   private readonly state: State = {
@@ -38,6 +42,15 @@ export class RobotImpostor {
         instruction: 'Use this tool to download and transcribe audio files',
         parameters: JSON.stringify({
           url: 'The URL of the audio file to download and transcribe',
+        }),
+      },
+      {
+        uuid: uuid(),
+        name: 'describe_image',
+        description: 'Use this tool to download and describe an image',
+        instruction: 'Use this tool to download and describe an image',
+        parameters: JSON.stringify({
+          url: 'The URL of the image to download and describe',
         }),
       },
     ],
@@ -76,7 +89,7 @@ export class RobotImpostor {
       console.log('➡️ Next move:', nextMove);
 
       if (!nextMove.tool) {
-        break;
+        return 'I was unable to generate a response';
       }
 
       if (nextMove.tool === 'final_answer') {
@@ -119,8 +132,8 @@ export class RobotImpostor {
           results: [newDocument],
           tool_uuid: tool.uuid,
         };
-        this.state.actions.push(action);
 
+        this.state.actions.push(action);
         this.state.documents.push(newDocument);
         console.log(`🧠 Remembered: ${params.text}`);
       }
@@ -148,11 +161,38 @@ export class RobotImpostor {
 
         this.state.actions.push(action);
         this.state.documents.push(newDocument);
-
         console.log(`🎤 Transcribed: ${transcription}`);
       }
-    }
 
-    return 'I was unable to generate a response';
+      if (nextMove.tool === 'describe_image') {
+        const params = typeof nextMove.query === 'string' ? JSON.parse(nextMove.query) : nextMove.query;
+        const imageBuffer = await this.sendRequestSkill.downloadFile(params.url);
+        const image = await this.imageManipulationSkill.prepareImageFromBuffer(imageBuffer);
+        const description = await this.openAiSkill.vision(
+          { role: 'system', content: 'Twoim zadaniem jest zwięzłe opisanie obrazu w języku polskim.' },
+          [image],
+        );
+
+        const newDocument: Document = {
+          uuid: uuid(),
+          text: description,
+          metadata: { url: params.url },
+        };
+
+        const tool = this.state.tools.find((t) => t.name === 'describe_image')!;
+        const action: Action = {
+          uuid: tool.uuid,
+          name: tool.name,
+          parameters: nextMove.query,
+          description: tool.description,
+          results: [newDocument],
+          tool_uuid: tool.uuid,
+        };
+
+        this.state.actions.push(action);
+        this.state.documents.push(newDocument);
+        console.log(`🖼️ Described: ${description}`);
+      }
+    }
   }
 }
