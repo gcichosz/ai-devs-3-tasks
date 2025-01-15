@@ -13,14 +13,9 @@ export class AgentService {
   async plan(messages: ChatCompletionMessageParam[], tools: Tool[], documents: Document[], actions: Action[]) {
     const planPrompt = await this.langfuseService.getPrompt('heart-plan');
     const [planPromptMessage] = planPrompt.compile({
-      tools: tools
-        .map((tool) => `<tool>${tool.name}: ${tool.description}; usage: ${tool.parameters}</tool>`)
-        .join('\n'),
-      facts: facts.map((f) => `<fact name="${f.metadata.name}">${f.text}</fact>`).join('\n'),
-      conversations: conversations
-        .map((c) => `<conversation name="${c.metadata.name}">${c.text}</conversation>`)
-        .join('\n'),
-      previous_answers: verifiedAnswers.length ? verifiedAnswers.map((a) => a.text).join('\n') : 'No answers yet.',
+      tools: tools.map((t) => this.formatTool(t)).join('\n'),
+      documents: documents.map((d) => this.formatDocument(d)).join('\n'),
+      actions: actions.map((a) => this.formatAction(a)).join('\n'),
     });
 
     const plan = (await this.openaiService.completionFull(
@@ -41,16 +36,27 @@ export class AgentService {
   ) {
     const answerPrompt = await this.langfuseService.getPrompt('heart-answer');
     const [answerPromptMessage] = answerPrompt.compile({
-      facts: facts.map((f) => `<fact name="${f.metadata.name}">${f.text}</fact>`).join('\n'),
-      conversations: conversations
-        .map((c) => `<conversation name="${c.metadata.name}">${c.text}</conversation>`)
-        .join('\n'),
       thoughts,
-      previous_answers: verifiedAnswers.length ? verifiedAnswers.map((a) => a.text).join('\n') : 'No answers yet.',
+      documents: documents.map((d) => this.formatDocument(d)).join('\n'),
+      actions: actions.map((a) => this.formatAction(a)).join('\n'),
     });
 
     const answer = await this.openaiService.completionFull([answerPromptMessage as never, ...messages], 'gpt-4o-mini');
 
     return JSON.parse(answer.choices[0].message.content ?? '{}');
+  }
+
+  private formatTool(tool: Tool) {
+    return `<tool>${tool.name}: ${tool.description}; usage: ${tool.parameters}</tool>`;
+  }
+
+  private formatDocument(document: Document) {
+    return `<document metadata="${JSON.stringify(document.metadata)}">${document.text}</document>`;
+  }
+
+  private formatAction(action: Action) {
+    return `<action name="${action.name}" description="${action.description}" parameters="${action.parameters}">${action.results
+      .map(this.formatDocument)
+      .join('\n')}</action>`;
   }
 }
