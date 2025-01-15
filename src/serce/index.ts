@@ -14,10 +14,6 @@ import { RobotImpostor } from './robot-impostor';
 // - Set up audio processing libraries
 // - Add functions to analyze received audio files
 
-// TODO: Add conversation state management
-// - Implement conversation tracking
-// - Store context for multi-step interactions
-
 // TODO: Add GPT-4o-mini interaction handling
 // - Implement logic for when system asks for new instructions
 // - Add flag extraction functionality

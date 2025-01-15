@@ -21,6 +21,16 @@ export class RobotImpostor {
         instruction: 'Use this tool when you are ready to provide the final response to the user',
         parameters: JSON.stringify({}),
       },
+      {
+        uuid: uuid(),
+        name: 'remember',
+        description: 'Use this tool to save important information for later use',
+        instruction: 'Use this tool to store a fact or piece of information that might be useful later',
+        parameters: JSON.stringify({
+          text: 'The information to remember',
+          metadata: 'Optional metadata about this information (JSON object)',
+        }),
+      },
     ],
     documents: [
       {
@@ -81,6 +91,29 @@ export class RobotImpostor {
 
         console.log(`💡 Final answer: `, finalAnswer);
         return finalAnswer.answer;
+      }
+
+      if (nextMove.tool === 'remember') {
+        const params = JSON.parse(nextMove.query);
+        const newDocument: Document = {
+          uuid: uuid(),
+          text: params.text,
+          metadata: params.metadata || {},
+        };
+
+        const tool = this.state.tools.find((t) => t.name === 'remember')!;
+        const action: Action = {
+          uuid: tool.uuid,
+          name: tool.name,
+          parameters: nextMove.query,
+          description: tool.description,
+          results: [newDocument],
+          tool_uuid: tool.uuid,
+        };
+        this.state.actions.push(action);
+
+        this.state.documents.push(newDocument);
+        console.log(`🧠 Remembered: ${params.text}`);
       }
     }
 
