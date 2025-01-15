@@ -2,7 +2,7 @@ import type { ChatCompletion, ChatCompletionMessageParam } from 'openai/resource
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { LangfuseService } from '../utils/langfuse/langfuse-service';
-import { Document, Tool } from './types';
+import { Action, Document, Tool } from './types';
 
 export class AgentService {
   constructor(
@@ -10,14 +10,8 @@ export class AgentService {
     private readonly langfuseService: LangfuseService,
   ) {}
 
-  async plan(
-    messages: ChatCompletionMessageParam[],
-    tools: Tool[],
-    facts: Document[],
-    conversations: Document[],
-    verifiedAnswers: Document[],
-  ) {
-    const planPrompt = await this.langfuseService.getPrompt('phone-plan');
+  async plan(messages: ChatCompletionMessageParam[], tools: Tool[], documents: Document[], actions: Action[]) {
+    const planPrompt = await this.langfuseService.getPrompt('heart-plan');
     const [planPromptMessage] = planPrompt.compile({
       tools: tools
         .map((tool) => `<tool>${tool.name}: ${tool.description}; usage: ${tool.parameters}</tool>`)
@@ -41,12 +35,11 @@ export class AgentService {
 
   async generateAnswer(
     messages: ChatCompletionMessageParam[],
-    facts: Document[],
-    conversations: Document[],
+    documents: Document[],
+    actions: Action[],
     thoughts: string,
-    verifiedAnswers: Document[],
   ) {
-    const answerPrompt = await this.langfuseService.getPrompt('phone-answer');
+    const answerPrompt = await this.langfuseService.getPrompt('heart-answer');
     const [answerPromptMessage] = answerPrompt.compile({
       facts: facts.map((f) => `<fact name="${f.metadata.name}">${f.text}</fact>`).join('\n'),
       conversations: conversations

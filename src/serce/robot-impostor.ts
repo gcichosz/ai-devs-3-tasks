@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { LangfuseService } from '../utils/langfuse/langfuse-service';
 import { AgentService } from './agent-service';
-import { Document, State } from './types';
+import { Action, Document, State } from './types';
 
 export class RobotImpostor {
   constructor(
@@ -34,6 +34,7 @@ export class RobotImpostor {
         metadata: {},
       },
     ],
+    actions: [],
     config: {
       max_steps: 5,
       current_step: 0,
@@ -41,8 +42,6 @@ export class RobotImpostor {
   };
 
   async answer(question: string) {
-    const facts: Document[] = [];
-    const conversations: Document[] = [];
     this.state.config.current_step = 0;
 
     for (; this.state.config.current_step < this.state.config.max_steps; this.state.config.current_step++) {
@@ -51,9 +50,8 @@ export class RobotImpostor {
       const nextMove = await this.agentService.plan(
         [{ role: 'user', content: question }],
         this.state.tools,
-        facts,
-        conversations,
         this.state.documents,
+        this.state.actions,
       );
 
       console.log('➡️ Next move:', nextMove);
@@ -65,11 +63,21 @@ export class RobotImpostor {
       if (nextMove.tool === 'final_answer') {
         const finalAnswer = await this.agentService.generateAnswer(
           [{ role: 'user', content: question }],
-          facts,
-          conversations,
-          nextMove.query,
           this.state.documents,
+          this.state.actions,
+          nextMove.query,
         );
+
+        const tool = this.state.tools.find((t) => t.name === 'final_answer')!;
+        const action: Action = {
+          uuid: tool.uuid,
+          name: tool.name,
+          parameters: nextMove.query,
+          description: tool.description,
+          results: [],
+          tool_uuid: tool.uuid,
+        };
+        this.state.actions.push(action);
 
         console.log(`💡 Final answer: `, finalAnswer);
         return finalAnswer.answer;
