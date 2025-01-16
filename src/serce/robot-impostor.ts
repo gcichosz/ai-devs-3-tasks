@@ -104,7 +104,7 @@ export class RobotImpostor {
         const action: Action = {
           uuid: tool.uuid,
           name: tool.name,
-          parameters: nextMove.query,
+          parameters: finalAnswer.answer,
           description: tool.description,
           results: [],
           tool_uuid: tool.uuid,
@@ -120,14 +120,14 @@ export class RobotImpostor {
         const newDocument: Document = {
           uuid: uuid(),
           text: params.text,
-          metadata: params.metadata || {},
+          metadata: { type: 'remember' },
         };
 
         const tool = this.state.tools.find((t) => t.name === 'remember')!;
         const action: Action = {
           uuid: tool.uuid,
           name: tool.name,
-          parameters: nextMove.query,
+          parameters: params,
           description: tool.description,
           results: [newDocument],
           tool_uuid: tool.uuid,
@@ -146,14 +146,14 @@ export class RobotImpostor {
         const newDocument: Document = {
           uuid: uuid(),
           text: transcription,
-          metadata: { url: params.url },
+          metadata: { url: params.url, type: 'transcription' },
         };
 
         const tool = this.state.tools.find((t) => t.name === 'transcribe')!;
         const action: Action = {
           uuid: tool.uuid,
           name: tool.name,
-          parameters: nextMove.query,
+          parameters: params,
           description: tool.description,
           results: [newDocument],
           tool_uuid: tool.uuid,
@@ -176,14 +176,14 @@ export class RobotImpostor {
         const newDocument: Document = {
           uuid: uuid(),
           text: description,
-          metadata: { url: params.url },
+          metadata: { url: params.url, type: 'image_description' },
         };
 
         const tool = this.state.tools.find((t) => t.name === 'describe_image')!;
         const action: Action = {
           uuid: tool.uuid,
           name: tool.name,
-          parameters: nextMove.query,
+          parameters: params,
           description: tool.description,
           results: [newDocument],
           tool_uuid: tool.uuid,
