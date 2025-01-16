@@ -55,7 +55,7 @@ export class AgentService {
   }
 
   private formatAction(action: Action) {
-    return `<action name="${action.name}" description="${action.description}" parameters="${action.parameters}">${action.results
+    return `<action name="${action.name}" parameters="${action.parameters}">${action.results
       .map(this.formatDocument)
       .join('\n')}</action>`;
   }
