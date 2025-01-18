@@ -10,13 +10,16 @@ export class QdrantService {
     });
   }
 
-  async createCollection(collectionName: string, vectorSize: number = 3072) {
+  async createCollection(collectionName: string, vectorSize: number = 3072, fromScratch: boolean = false) {
     const collections = await this.qdrantClient.getCollections();
-    if (collections.collections.some((c) => c.name === collectionName)) {
-      await this.qdrantClient.deleteCollection(collectionName);
-    }
+    const collectionExists = collections.collections.some((c) => c.name === collectionName);
 
-    await this.qdrantClient.createCollection(collectionName, { vectors: { size: vectorSize, distance: 'Cosine' } });
+    if (fromScratch && collectionExists) {
+      await this.qdrantClient.deleteCollection(collectionName);
+      await this.qdrantClient.createCollection(collectionName, { vectors: { size: vectorSize, distance: 'Cosine' } });
+    } else if (!collectionExists) {
+      await this.qdrantClient.createCollection(collectionName, { vectors: { size: vectorSize, distance: 'Cosine' } });
+    }
   }
 
   async upsert(collectionName: string, points: { id: string; vector: number[]; payload: Record<string, unknown> }[]) {
