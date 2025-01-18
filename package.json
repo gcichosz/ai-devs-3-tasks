@@ -39,7 +39,8 @@
     "gps": "bun run src/gps/index.ts",
     "speed": "bun run src/speed/index.ts",
     "serce": "bun run src/serce/index.ts",
-    "story": "bun run src/story/index.ts"
+    "story": "bun run src/story/index.ts",
+    "story:ingestion": "bun run src/story/ingestion.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
