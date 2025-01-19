@@ -4,12 +4,17 @@ import { QdrantService } from '../utils/qdrant/qdrant-service';
 
 const QDRANT_COLLECTION = 'story';
 
-const answerQuestion = async (question: string, openAiSkill: OpenAISkill, qdrantService: QdrantService) => {
+const answerQuestion = async (
+  question: string,
+  openAiSkill: OpenAISkill,
+  qdrantService: QdrantService,
+  multiplier: number,
+) => {
   console.log('❓Question:', question);
   const questionEmbedding = await openAiSkill.createEmbedding(question);
-  const relevantDocuments = await qdrantService.search(QDRANT_COLLECTION, questionEmbedding, 5);
-  console.log('🔍 Found relevant documents:');
-  console.log(relevantDocuments);
+  const relevantDocuments = await qdrantService.search(QDRANT_COLLECTION, questionEmbedding, 5 * multiplier);
+  // console.log('🔍 Found relevant documents:');
+  // console.log(relevantDocuments);
 
   const answerResponse = await openAiSkill.completionFull([
     {
@@ -58,18 +63,36 @@ const main = async () => {
     'Jak obecnie miewa się Rafał? Określ jego stan.', // 23
   ];
 
-  const answers = [];
-  for (let i = 0; i < questions.length; i++) {
-    const answer = await answerQuestion(questions[i], openAiSkill, qdrantService);
-    answers.push(answer);
-  }
+  // TODO: This is a brute-force approach. Refactor to a more elegant (agentic) solution
+  const correct = new Map();
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const answers = [];
+    for (let i = 0; i < questions.length; i++) {
+      let answer: string | null;
+      if (correct.has(i)) {
+        answer = correct.get(i);
+      } else {
+        answer = await answerQuestion(questions[i], openAiSkill, qdrantService, Math.pow(2, attempt));
+      }
+      answers.push(answer);
+    }
 
-  const reportResponse = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
-    task: 'story',
-    apikey: process.env.AI_DEVS_API_KEY,
-    answer: answers,
-  });
-  console.log(reportResponse);
+    const reportResponse = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+      task: 'story',
+      apikey: process.env.AI_DEVS_API_KEY,
+      answer: answers,
+    });
+    console.log(reportResponse);
+
+    for (const message of (reportResponse as { ok: string[] }).ok) {
+      const match = message.match(/index\[(\d+)\]/);
+      if (match) {
+        const index = parseInt(match[1], 10);
+        correct.set(index, answers[index]);
+      }
+    }
+    console.log(correct);
+  }
 };
 
 main();
