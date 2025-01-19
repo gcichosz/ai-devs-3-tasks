@@ -1,6 +1,5 @@
-// TODO: Create a function to submit the answer
-
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
+import { SendRequestSkill } from '../skills/send-request/send-request-skill';
 import { QdrantService } from '../utils/qdrant/qdrant-service';
 
 const QDRANT_COLLECTION = 'story';
@@ -8,14 +7,14 @@ const QDRANT_COLLECTION = 'story';
 const answerQuestion = async (question: string, openAiSkill: OpenAISkill, qdrantService: QdrantService) => {
   console.log('❓Question:', question);
   const questionEmbedding = await openAiSkill.createEmbedding(question);
-  const relevantDocuments = await qdrantService.search(QDRANT_COLLECTION, questionEmbedding, 3);
+  const relevantDocuments = await qdrantService.search(QDRANT_COLLECTION, questionEmbedding, 5);
   console.log('🔍 Found relevant documents:');
   console.log(relevantDocuments);
 
   const answerResponse = await openAiSkill.completionFull([
     {
       role: 'system',
-      content: `You are a helpful assistant. Your role is to answer questions based on the provided context as concisely as possible.
+      content: `You are a helpful assistant. Your role is to answer questions based on the provided context concisely, using as few words as possible.
       <context>
       ${relevantDocuments.map((r) => `<document type='${r.payload?.type}'>${r.payload?.text}</document>`).join('\n')}
       </context>`,
@@ -30,39 +29,47 @@ const answerQuestion = async (question: string, openAiSkill: OpenAISkill, qdrant
 const main = async () => {
   const qdrantService = new QdrantService(process.env.QDRANT_URL, process.env.QDRANT_API_KEY);
   const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY);
+  const sendRequestSkill = new SendRequestSkill();
 
   const questions = [
-    'W którym roku znajduje się Zygfryd, który wysłał "numer piąty" w przeszłość?',
-    'Do którego roku wysłany został numer piąty?',
-    'Jak nazywa się firma zbrojeniowa produkująca roboty przemysłowe i militarne?',
-    'Jak nazywa się firma tworząca oprogramowanie do zarządzania robotami?',
-    'Na jakiej ulicy znajduje się siedziba firmy Softo?',
-    'Jak ma na nazwisko Zygfryd M.?',
-    'Andrzej Maj napisał swoją pracę na temat podróży w czasie i wykorzystania LLM-ów. W którym to było roku?',
-    'Jak nazywa się uczelnia na której pracował Andrzej Maj i na którą marzył, aby się dostać?',
-    'Jak nazywał się Rafał, jeden z laborantów pracujących z Andrzejem Majem',
-    'Rafał zmienił swoje nazwisko na...',
-    'Do którego roku cofnął się Rafał?',
-    'Ile lat Rafał miał spędzić w Grudziądzu na nauce?',
-    'Kto zasugerował Rafałowi skok w czasie i kto później uczył go obsługi LLM-ów?',
-    'Rafał zabrał część wyników badań profesora i cofnął się z nimi w czasie. Komu je przekazał?',
-    'Jak nazywał się podwójny agent działający dla Zygfryda, ale przekazujący wszelkie informacje do Centrali?',
-    'Rafał ukrył brakującą część dokumentów w swoim komputerze. Jak brzmiało hasło do pierwszej warstwy zabezpieczeń?',
-    'Roboty przesłuchały wiele osób podczas poszukiwania profesora Andrzeja Maja. Jak miał na imię mężczyzna, który pomylił Andrzeja z kimś innym?',
-    'Jak miał na imię mężczyzna, który bał się Andrzeja Maja i uważał go za złego człowieka, a nawet nazywał go "złem"?',
-    'Gdzie ukrył się Rafał po przesłuchaniu przez roboty?',
-    'Z kim miał spotkać się w swojej kryjówce Rafał?',
-    'W kryjówce Rafała ktoś został zabity - kto to był?',
-    'Gdze planował uciec Rafał po spotkaniu z Andrzejem?',
-    'Kto miał czekać na Rafała w Lubawie i pomóc mu w ucieczce?',
-    'Jak obecnie miewa się Rafał? Określ jego stan.',
+    'W którym roku znajduje się Zygfryd, który wysłał "numer piąty" w przeszłość?', // 0
+    'Do którego roku wysłany został numer piąty?', // 1
+    'Jak nazywa się firma zbrojeniowa produkująca roboty przemysłowe i militarne?', // 2
+    'Jak nazywa się firma tworząca oprogramowanie do zarządzania robotami?', // 3
+    'Na jakiej ulicy znajduje się siedziba firmy Softo?', // 4
+    'Jak ma na nazwisko Zygfryd M.?', // 5
+    'Andrzej Maj napisał swoją pracę na temat podróży w czasie i wykorzystania LLM-ów. W którym to było roku?', // 6
+    'Jak nazywa się uczelnia na której pracował Andrzej Maj i na którą marzył, aby się dostać?', // 7
+    'Jak nazywał się Rafał, jeden z laborantów pracujących z Andrzejem Majem', // 8
+    'Rafał zmienił swoje nazwisko na...', // 9
+    'Do którego roku cofnął się Rafał?', // 10
+    'Ile lat Rafał miał spędzić w Grudziądzu na nauce?', // 11
+    'Kto zasugerował Rafałowi skok w czasie i kto później uczył go obsługi LLM-ów?', // 12
+    'Rafał zabrał część wyników badań profesora i cofnął się z nimi w czasie. Komu je przekazał?', // 13
+    'Jak nazywał się podwójny agent działający dla Zygfryda, ale przekazujący wszelkie informacje do Centrali?', // 14
+    'Rafał ukrył brakującą część dokumentów w swoim komputerze. Jak brzmiało hasło do pierwszej warstwy zabezpieczeń?', // 15
+    'Roboty przesłuchały wiele osób podczas poszukiwania profesora Andrzeja Maja. Jak miał na imię mężczyzna, który pomylił Andrzeja z kimś innym?', // 16
+    'Jak miał na imię mężczyzna, który bał się Andrzeja Maja i uważał go za złego człowieka, a nawet nazywał go "złem"?', // 17
+    'Gdzie ukrył się Rafał po przesłuchaniu przez roboty?', // 18
+    'Z kim miał spotkać się w swojej kryjówce Rafał?', // 19
+    'W kryjówce Rafała ktoś został zabity - kto to był?', // 20
+    'Gdze planował uciec Rafał po spotkaniu z Andrzejem?', // 21
+    'Kto miał czekać na Rafała w Lubawie i pomóc mu w ucieczce?', // 22
+    'Jak obecnie miewa się Rafał? Określ jego stan.', // 23
   ];
 
   const answers = [];
-  for (const question of questions) {
-    const answer = await answerQuestion(question, openAiSkill, qdrantService);
+  for (let i = 0; i < questions.length; i++) {
+    const answer = await answerQuestion(questions[i], openAiSkill, qdrantService);
     answers.push(answer);
   }
+
+  const reportResponse = await sendRequestSkill.postRequest('https://centrala.ag3nts.org/report', {
+    task: 'story',
+    apikey: process.env.AI_DEVS_API_KEY,
+    answer: answers,
+  });
+  console.log(reportResponse);
 };
 
 main();
