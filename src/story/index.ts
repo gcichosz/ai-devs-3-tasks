@@ -9,6 +9,7 @@ const answerQuestion = async (
   openAiSkill: OpenAISkill,
   qdrantService: QdrantService,
   multiplier: number,
+  correctAnswers: Map<number, string>,
 ) => {
   console.log('❓Question:', question);
   const questionEmbedding = await openAiSkill.createEmbedding(question);
@@ -22,6 +23,9 @@ const answerQuestion = async (
       content: `You are a helpful assistant. Your role is to answer questions based on the provided context concisely, using as few words as possible.
       <context>
       ${relevantDocuments.map((r) => `<document type='${r.payload?.type}'>${r.payload?.text}</document>`).join('\n')}
+      ${Array.from(correctAnswers.entries())
+        .map(([i, a]) => `<truth question='${question[i]}'>${a}</truth>`)
+        .join('\n')}
       </context>`,
     },
     { role: 'user', content: question },
@@ -72,7 +76,7 @@ const main = async () => {
       if (correct.has(i)) {
         answer = correct.get(i);
       } else {
-        answer = await answerQuestion(questions[i], openAiSkill, qdrantService, Math.pow(2, attempt));
+        answer = await answerQuestion(questions[i], openAiSkill, qdrantService, Math.pow(2, attempt), correct);
       }
       answers.push(answer);
     }
