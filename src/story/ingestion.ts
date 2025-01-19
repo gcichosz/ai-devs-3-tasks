@@ -172,6 +172,25 @@ const ingestInterrogations = async (
   );
 };
 
+const ingestPhoneCalls = async (openAiSkill: OpenAISkill, qdrantService: QdrantService) => {
+  const phoneCallsDir = './src/story/phone/';
+  const phoneCalls = await fs.readdir(phoneCallsDir);
+  await Promise.all(
+    phoneCalls.map(async (phoneCall) => {
+      const phoneCallContent = await fs.readFile(path.join(phoneCallsDir, phoneCall), 'utf-8');
+      const phoneCallData = JSON.parse(phoneCallContent);
+      const document = {
+        uuid: uuidv4(),
+        text: phoneCallData.text,
+        metadata: {
+          type: `phone_call`,
+        },
+      };
+      await saveDocument(document, openAiSkill, qdrantService);
+    }),
+  );
+};
+
 const ingest = async () => {
   const qdrantService = new QdrantService(process.env.QDRANT_URL, process.env.QDRANT_API_KEY);
   const scrapeWebSkill = new ScrapeWebSkill(process.env.FIRECRAWL_API_KEY!, [
@@ -201,6 +220,7 @@ const ingest = async () => {
   await ingestWebsite(scrapeWebSkill, openAiSkill, qdrantService);
   await ingestArticle(scrapeWebSkill, openAiSkill, qdrantService);
   await ingestInterrogations(speechToTextSkill, openAiSkill, qdrantService);
+  await ingestPhoneCalls(openAiSkill, qdrantService);
 };
 
 ingest();
