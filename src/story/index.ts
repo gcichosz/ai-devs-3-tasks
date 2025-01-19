@@ -1,4 +1,3 @@
-// TODO: Ingest content into vector database (create embeddings)
 // TODO: Create a function to submit the answer
 
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';

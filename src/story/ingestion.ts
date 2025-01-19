@@ -209,6 +209,72 @@ const ingestFacts = async (openAiSkill: OpenAISkill, qdrantService: QdrantServic
   );
 };
 
+const ingestReports = async (
+  openAiSkill: OpenAISkill,
+  qdrantService: QdrantService,
+  speechToTextSkill: SpeechToTextSkill,
+  imageManipulationSkill: ImageManipulationSkill,
+) => {
+  const reportsDir = './src/story/reports/';
+  const reports = await fs.readdir(reportsDir);
+  await Promise.all(
+    reports.map(async (report) => {
+      const extension = report.split('.').pop();
+
+      if (extension === 'txt') {
+        const reportData = await fs.readFile(path.join(reportsDir, report), 'utf-8');
+        const document = {
+          uuid: uuidv4(),
+          text: `${report.split('.')[0]}: ${reportData}`,
+          metadata: {
+            type: `report`,
+          },
+        };
+        await saveDocument(document, openAiSkill, qdrantService);
+        return;
+      }
+
+      if (extension === 'mp3') {
+        console.log(`🎙️ Transcribing report: ${report}`);
+        const audio = await fs.readFile(path.join(reportsDir, report));
+        const transcription = await speechToTextSkill.transcribe(audio);
+        console.log(`🎙️ Transcribed report: ${report}`, transcription);
+        const document = {
+          uuid: uuidv4(),
+          text: `${report.split('.')[0]}: ${transcription}`,
+          metadata: {
+            type: `report`,
+          },
+        };
+        await saveDocument(document, openAiSkill, qdrantService);
+        return;
+      }
+
+      if (extension === 'png') {
+        const base64 = await imageManipulationSkill.prepareImageFromPath(reportsDir + report);
+        console.log(`✍️ Transcribing ${report}`);
+        const transcription = await openAiSkill.vision(
+          {
+            role: 'system',
+            content:
+              'Transcribe the text from the repair note below. The text is in Polish. Ignore headers and footers, transcribe just the main content.',
+          },
+          [base64],
+        );
+        console.log(`✍️ Transcribed ${report}`, transcription);
+        const document = {
+          uuid: uuidv4(),
+          text: `${report.split('.')[0]}: ${transcription}`,
+          metadata: {
+            type: 'report',
+          },
+        };
+        await saveDocument(document, openAiSkill, qdrantService);
+      }
+    }),
+  );
+};
+
 const ingest = async () => {
   const qdrantService = new QdrantService(process.env.QDRANT_URL, process.env.QDRANT_API_KEY);
   const scrapeWebSkill = new ScrapeWebSkill(process.env.FIRECRAWL_API_KEY!, [
@@ -240,6 +306,7 @@ const ingest = async () => {
   await ingestInterrogations(speechToTextSkill, openAiSkill, qdrantService);
   await ingestPhoneCalls(openAiSkill, qdrantService);
   await ingestFacts(openAiSkill, qdrantService);
+  await ingestReports(openAiSkill, qdrantService, speechToTextSkill, imageManipulationSkill);
 };
 
 ingest();
