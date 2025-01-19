@@ -191,6 +191,24 @@ const ingestPhoneCalls = async (openAiSkill: OpenAISkill, qdrantService: QdrantS
   );
 };
 
+const ingestFacts = async (openAiSkill: OpenAISkill, qdrantService: QdrantService) => {
+  const factsDir = './src/story/facts/';
+  const facts = await fs.readdir(factsDir);
+  await Promise.all(
+    facts.map(async (fact) => {
+      const factData = await fs.readFile(path.join(factsDir, fact), 'utf-8');
+      const document = {
+        uuid: uuidv4(),
+        text: factData,
+        metadata: {
+          type: `fact`,
+        },
+      };
+      await saveDocument(document, openAiSkill, qdrantService);
+    }),
+  );
+};
+
 const ingest = async () => {
   const qdrantService = new QdrantService(process.env.QDRANT_URL, process.env.QDRANT_API_KEY);
   const scrapeWebSkill = new ScrapeWebSkill(process.env.FIRECRAWL_API_KEY!, [
@@ -221,6 +239,7 @@ const ingest = async () => {
   await ingestArticle(scrapeWebSkill, openAiSkill, qdrantService);
   await ingestInterrogations(speechToTextSkill, openAiSkill, qdrantService);
   await ingestPhoneCalls(openAiSkill, qdrantService);
+  await ingestFacts(openAiSkill, qdrantService);
 };
 
 ingest();
