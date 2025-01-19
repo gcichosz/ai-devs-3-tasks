@@ -39,17 +39,9 @@ const ingestBlog = async (
   console.log('🔍 Scraping blog');
   const { markdown } = await scrapeWebSkill.scrapeUrl('https://rafal.ag3nts.org/blogXYZ/');
   console.log('🔍 Blog scraped');
-  const chapters = markdown.split('## ').filter((c) => c.length > 0);
-  const docs = chapters.map((chapter) => ({
-    uuid: uuidv4(),
-    text: chapter,
-    metadata: {
-      type: 'blog_rafala',
-    },
-  }));
-  // console.log('🪓 Splitting blog');
-  // const docs = await textSplitter.split(markdown, 1000, 'blog_rafala');
-  // console.log('🪓 Blog splitted');
+  console.log('🪓 Splitting blog');
+  const docs = await textSplitter.split(markdown, 250, 'blog_rafala');
+  console.log('🪓 Blog splitted');
   await Promise.all(
     docs.map(async (doc) => {
       await saveDocument(doc, openAiSkill, qdrantService);
