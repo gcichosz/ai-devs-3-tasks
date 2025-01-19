@@ -37,9 +37,17 @@ const ingestBlog = async (
   console.log('🔍 Scraping blog');
   const { markdown } = await scrapeWebSkill.scrapeUrl('https://rafal.ag3nts.org/blogXYZ/');
   console.log('🔍 Blog scraped');
-  console.log('🪓 Splitting blog');
-  const docs = await textSplitter.split(markdown, 1000, 'blog_rafala');
-  console.log('🪓 Blog splitted');
+  const chapters = markdown.split('## ').filter((c) => c.length > 0);
+  const docs = chapters.map((chapter) => ({
+    uuid: uuidv4(),
+    text: chapter,
+    metadata: {
+      type: 'blog_rafala',
+    },
+  }));
+  // console.log('🪓 Splitting blog');
+  // const docs = await textSplitter.split(markdown, 1000, 'blog_rafala');
+  // console.log('🪓 Blog splitted');
   await Promise.all(
     docs.map(async (doc) => {
       await saveDocument(doc, openAiSkill, qdrantService);
@@ -114,6 +122,29 @@ const ingestWebsite = async (
   }
 };
 
+const ingestArticle = async (
+  scrapeWebSkill: ScrapeWebSkill,
+  openAiSkill: OpenAISkill,
+  qdrantService: QdrantService,
+) => {
+  console.log('🔍 Scraping article');
+  const { markdown } = await scrapeWebSkill.scrapeUrl('https://centrala.ag3nts.org/dane/arxiv-draft.html');
+  console.log('🔍 Scraped article');
+  const chapters = markdown.split('## ').filter((c) => c.length > 0);
+  const docs = chapters.map((chapter) => ({
+    uuid: uuidv4(),
+    text: chapter,
+    metadata: {
+      type: 'time_travel_and_llm_whitepaper',
+    },
+  }));
+  await Promise.all(
+    docs.map(async (doc) => {
+      await saveDocument(doc, openAiSkill, qdrantService);
+    }),
+  );
+};
+
 const ingest = async () => {
   const qdrantService = new QdrantService(process.env.QDRANT_URL, process.env.QDRANT_API_KEY);
   const scrapeWebSkill = new ScrapeWebSkill(process.env.FIRECRAWL_API_KEY!, [
@@ -124,6 +155,10 @@ const ingest = async () => {
     {
       name: 'softo',
       url: 'https://softo.ag3nts.org/',
+    },
+    {
+      name: 'arxiv',
+      url: 'https://centrala.ag3nts.org/',
     },
   ]);
   const textSplitter = new TextSplitter();
@@ -136,6 +171,7 @@ const ingest = async () => {
   await ingestBlog(scrapeWebSkill, textSplitter, openAiSkill, qdrantService);
   await ingestNotes(imageManipulationSkill, openAiSkill, qdrantService);
   await ingestWebsite(scrapeWebSkill, openAiSkill, qdrantService);
+  await ingestArticle(scrapeWebSkill, openAiSkill, qdrantService);
 };
 
 ingest();
