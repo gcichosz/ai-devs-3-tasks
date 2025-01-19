@@ -78,7 +78,6 @@ export class OpenAISkill {
     }));
 
     const response = await this.completionFull([systemPrompt, ...(imageMessages as never)], model, jsonMode);
-    console.log(JSON.stringify(response.choices[0].message));
     return response.choices[0].message.content ?? '';
   }
 }

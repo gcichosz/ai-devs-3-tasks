@@ -22,7 +22,7 @@ export class TextSplitter {
     }
   }
 
-  async split(text: string, limit: number): Promise<Document[]> {
+  async split(text: string, limit: number, type: string): Promise<Document[]> {
     console.log(`Starting split process with limit: ${limit} tokens`);
     const chunks: Document[] = [];
     let position = 0;
@@ -31,14 +31,12 @@ export class TextSplitter {
     while (position < totalLength) {
       console.log(`Processing chunk starting at position: ${position}`);
       const { chunkText, chunkEnd } = this.getChunk(text, position, limit);
-      const tokens = this.countTokens(chunkText);
-      console.log(`Chunk tokens: ${tokens}`);
 
       chunks.push({
         uuid: uuidv4(),
         text: chunkText,
         metadata: {
-          tokens,
+          type,
         },
       });
 

@@ -2,7 +2,7 @@ export type Document = {
   uuid: string;
   text: string;
   metadata: {
-    tokens: number;
+    type: string;
   };
 };
 

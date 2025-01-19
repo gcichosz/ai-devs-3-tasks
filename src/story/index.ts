@@ -18,7 +18,7 @@ const answerQuestion = async (question: string, openAiSkill: OpenAISkill, qdrant
       role: 'system',
       content: `You are a helpful assistant. Your role is to answer questions based on the provided context as concisely as possible.
       <context>
-      ${relevantDocuments.map((r) => r.payload?.text).join('\n')}
+      ${relevantDocuments.map((r) => `<document type='${r.payload?.type}'>${r.payload?.text}</document>`).join('\n')}
       </context>`,
     },
     { role: 'user', content: question },
