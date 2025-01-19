@@ -162,9 +162,9 @@ const ingestInterrogations = async (
       console.log(`🎙️ Transcribed interrogation: ${interrogation}`, transcription);
       const document = {
         uuid: uuidv4(),
-        text: transcription,
+        text: `${interrogation.slice(0, -4)}: ${transcription}`,
         metadata: {
-          type: `przesluchanie_${interrogation.slice(0, -4)}`,
+          type: `przesluchanie`,
         },
       };
       await saveDocument(document, openAiSkill, qdrantService);
