@@ -1,9 +1,11 @@
 import { promises as fs } from 'fs';
+import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ImageManipulationSkill } from '../skills/image-manipulation/image-manipulation-skill';
 import { OpenAISkill } from '../skills/open-ai/open-ai-skill';
 import { ScrapeWebSkill } from '../skills/scrape-web/scrape-web-skill';
+import { SpeechToTextSkill } from '../skills/speech-to-text/speech-to-text-skill';
 import { QdrantService } from '../utils/qdrant/qdrant-service';
 import { TextSplitter } from './text-splitter';
 import { Document } from './types';
@@ -145,6 +147,31 @@ const ingestArticle = async (
   );
 };
 
+const ingestInterrogations = async (
+  speechToTextSkill: SpeechToTextSkill,
+  openAiSkill: OpenAISkill,
+  qdrantService: QdrantService,
+) => {
+  const interrogationsDir = './src/story/interrogations/';
+  const interrogations = await fs.readdir(interrogationsDir);
+  await Promise.all(
+    interrogations.map(async (interrogation) => {
+      console.log(`🎙️ Transcribing interrogation: ${interrogation}`);
+      const audio = await fs.readFile(path.join(interrogationsDir, interrogation));
+      const transcription = await speechToTextSkill.transcribe(audio);
+      console.log(`🎙️ Transcribed interrogation: ${interrogation}`, transcription);
+      const document = {
+        uuid: uuidv4(),
+        text: transcription,
+        metadata: {
+          type: `przesluchanie_${interrogation.slice(0, -4)}`,
+        },
+      };
+      await saveDocument(document, openAiSkill, qdrantService);
+    }),
+  );
+};
+
 const ingest = async () => {
   const qdrantService = new QdrantService(process.env.QDRANT_URL, process.env.QDRANT_API_KEY);
   const scrapeWebSkill = new ScrapeWebSkill(process.env.FIRECRAWL_API_KEY!, [
@@ -165,6 +192,7 @@ const ingest = async () => {
   await textSplitter.initializeTokenizer();
   const openAiSkill = new OpenAISkill(process.env.OPENAI_API_KEY!);
   const imageManipulationSkill = new ImageManipulationSkill();
+  const speechToTextSkill = new SpeechToTextSkill(process.env.GROQ_API_KEY!);
 
   await qdrantService.createCollection(QDRANT_COLLECTION, 3072);
 
@@ -172,6 +200,7 @@ const ingest = async () => {
   await ingestNotes(imageManipulationSkill, openAiSkill, qdrantService);
   await ingestWebsite(scrapeWebSkill, openAiSkill, qdrantService);
   await ingestArticle(scrapeWebSkill, openAiSkill, qdrantService);
+  await ingestInterrogations(speechToTextSkill, openAiSkill, qdrantService);
 };
 
 ingest();
